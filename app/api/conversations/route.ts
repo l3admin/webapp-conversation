@@ -1,12 +1,12 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { AuthError, getClient, getInfo } from '@/app/api/utils/common'
+import { AuthError, getInfo } from '@/app/api/utils/common'
+import { difyAdapter } from '@/app/api/utils/dify-adapter'
 
 export async function GET(request: NextRequest) {
   try {
     const { user } = await getInfo(request)
-    const client = getClient()
-    const { data }: any = await client.getConversations(user)
+    const data = await difyAdapter.getConversations(user)
     return NextResponse.json(data)
   }
   catch (error: any) {

@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { SUPABASE_PROJECT_URL, SUPABASE_PUBLISHABLE_KEY } from '@/config'
+import { getSupabaseServerConfig } from '@/config/server'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -12,7 +12,11 @@ export async function GET(request: NextRequest) {
     ? requestedTargetUrl
     : new URL('/', requestUrl.origin)
 
-  if (!SUPABASE_PROJECT_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  let supabaseConfig: ReturnType<typeof getSupabaseServerConfig>
+  try {
+    supabaseConfig = getSupabaseServerConfig()
+  }
+  catch {
     const signInUrl = new URL('/sign-in', requestUrl.origin)
     signInUrl.searchParams.set('authError', 'missing_supabase_env')
     return NextResponse.redirect(signInUrl)
@@ -25,7 +29,7 @@ export async function GET(request: NextRequest) {
   }
 
   const response = NextResponse.redirect(targetUrl)
-  const supabase = createServerClient(SUPABASE_PROJECT_URL, SUPABASE_PUBLISHABLE_KEY, {
+  const supabase = createServerClient(supabaseConfig.url, supabaseConfig.publishableKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll()

@@ -1,8 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { ChatClient } from 'dify-client'
 import { createServerClient } from '@supabase/ssr'
-import { DIFY_API_BASE_URL, DIFY_APP_API_KEY_KN_COLD } from '@/config/server'
-import { SUPABASE_PROJECT_URL, SUPABASE_PUBLISHABLE_KEY } from '@/config'
+import { DIFY_API_BASE_URL, DIFY_APP_API_KEY_KN_COLD, getSupabaseServerConfig } from '@/config/server'
 
 const userPrefix = 'user:'
 let cachedClient: ChatClient | null = null
@@ -15,11 +14,9 @@ export class AuthError extends Error {
 }
 
 const createSupabaseRouteClient = (request: NextRequest) => {
-  if (!SUPABASE_PROJECT_URL || !SUPABASE_PUBLISHABLE_KEY) {
-    throw new Error('Missing Supabase configuration: NEXT_PUBLIC_SUPABASE_PROJECT_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY are required.')
-  }
+  const { url, publishableKey } = getSupabaseServerConfig()
 
-  return createServerClient(SUPABASE_PROJECT_URL, SUPABASE_PUBLISHABLE_KEY, {
+  return createServerClient(url, publishableKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll()

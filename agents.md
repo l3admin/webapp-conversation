@@ -8,6 +8,7 @@ This file captures the current decisions for auth, configuration, and deployment
 - Auth: Supabase email magic link.
 - API boundary: frontend calls local `/api/*` routes only.
 - Dify access: server-side only via `dify-client` in API routes.
+- Dify adapter boundary: all Dify SDK calls are routed through `app/api/utils/dify-adapter.ts`.
 - User identity passed to Dify: `user:<supabase_user_id>`.
 
 ## Security Rules
@@ -79,3 +80,9 @@ For role/profile-based agent access:
 - Store user-to-agent access in Supabase tables.
 - Resolve allowed agent at request time in server routes.
 - Keep per-agent Dify keys in a secret store (recommended: Google Secret Manager), not in frontend or public env vars.
+
+## Dify Upgrade Strategy
+
+- Keep `/api/*` as the stable internal contract used by the frontend.
+- Keep all Dify-specific request/response handling inside `app/api/utils/dify-adapter.ts`.
+- When Dify releases changes, update adapter logic first and avoid direct frontend coupling to Dify SDK/event shapes.

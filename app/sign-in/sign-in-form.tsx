@@ -3,9 +3,14 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { createBrowserClient } from '@supabase/ssr'
 
-const SignInForm = () => {
+type SignInFormProps = {
+  supabaseProjectUrl: string
+  supabasePublishableKey: string
+}
+
+const SignInForm = ({ supabaseProjectUrl, supabasePublishableKey }: SignInFormProps) => {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
@@ -19,6 +24,7 @@ const SignInForm = () => {
     return value
   }, [searchParams])
   const authError = searchParams.get('authError')
+  const supabase = useMemo(() => createBrowserClient(supabaseProjectUrl, supabasePublishableKey), [supabaseProjectUrl, supabasePublishableKey])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -27,7 +33,6 @@ const SignInForm = () => {
     setIsSubmitting(true)
 
     try {
-      const supabase = getSupabaseBrowserClient()
       const callbackUrl = new URL('/auth/callback', window.location.origin)
       callbackUrl.searchParams.set('redirectTo', redirectTo)
 
