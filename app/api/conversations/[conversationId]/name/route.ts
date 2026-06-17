@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { AuthError, client, getInfo } from '@/app/api/utils/common'
+import { AuthError, getClient, getInfo } from '@/app/api/utils/common'
 
 export async function POST(request: NextRequest, { params }: {
   params: Promise<{ conversationId: string }>
@@ -13,6 +13,7 @@ export async function POST(request: NextRequest, { params }: {
     } = body
     const { conversationId } = await params
     const { user } = await getInfo(request)
+    const client = getClient()
 
     // auto generate name
     const { data } = await client.renameConversation(conversationId, name, user, auto_generate)

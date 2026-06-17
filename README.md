@@ -4,20 +4,17 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 ## Config App
 Create a file named `.env.local` in the current directory and copy the contents from `.env.example`. Setting the following content:
 ```
-# APP ID: This is the unique identifier for your app. You can find it in the app's detail page URL. 
-# For example, in the URL `https://cloud.dify.ai/app/xxx/workflow`, the value `xxx` is your APP ID.
-NEXT_PUBLIC_APP_ID=
+# Dify API base URL (server-only)
+DIFY_API_BASE_URL=https://api.dify.ai/v1
 
-# APP API Key: This is the key used to authenticate your app's API requests. 
-# You can generate it on the app's "API Access" page by clicking the "API Key" button in the top-right corner.
-NEXT_PUBLIC_APP_KEY=
+# Dify app API key for KN COLD agent (server-only)
+DIFY_APP_API_KEY_KN_COLD=
 
-# APP URL: This is the API's base URL. If you're using the Dify cloud service, set it to: https://api.dify.ai/v1.
-NEXT_PUBLIC_API_URL=
+# Supabase project URL (public)
+NEXT_PUBLIC_SUPABASE_PROJECT_URL=
 
-# Supabase URL and public anon key are used for email magic-link authentication.
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+# Supabase publishable/anon key (public)
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 ```
 
 Config more in `config/index.ts` file:   

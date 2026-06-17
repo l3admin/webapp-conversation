@@ -1,9 +1,8 @@
 import type { AppInfo } from '@/types/app'
-export const APP_ID = `${process.env.NEXT_PUBLIC_APP_ID}`
-export const API_KEY = `${process.env.NEXT_PUBLIC_APP_KEY}`
-export const API_URL = `${process.env.NEXT_PUBLIC_API_URL}`
-export const SUPABASE_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}`
-export const SUPABASE_ANON_KEY = `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}`
+
+export const SUPABASE_PROJECT_URL = `${process.env.NEXT_PUBLIC_SUPABASE_PROJECT_URL || ''}`
+export const SUPABASE_PUBLISHABLE_KEY = `${process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''}`
+
 export const APP_INFO: AppInfo = {
   title: 'Chat APP',
   description: '',

@@ -1,10 +1,11 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { AuthError, client, getInfo } from '@/app/api/utils/common'
+import { AuthError, getClient, getInfo } from '@/app/api/utils/common'
 
 export async function GET(request: NextRequest) {
   try {
     const { user } = await getInfo(request)
+    const client = getClient()
     const { data } = await client.getApplicationParameters(user)
     return NextResponse.json(data as object)
   }
