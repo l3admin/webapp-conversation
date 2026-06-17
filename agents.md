@@ -73,6 +73,12 @@ Naming rules:
 - `.gitignore` is set to ignore all `.env*` except `.env.example`.
 - `.env.example` should contain placeholders only (no real project values).
 
+## UX Backlog (Deferred)
+
+- Branding updates for site UI are still pending (colors, logo, copy polish).
+- Supabase/Auth email template branding is still pending.
+- Both branding tasks are intentionally deferred until core auth + app runtime stability is complete.
+
 ## Planned Multi-Agent Model (Next Step)
 
 For role/profile-based agent access:

@@ -11,12 +11,18 @@ export async function POST(request: NextRequest) {
     return new Response(fileId)
   }
   catch (e: any) {
-    const status = e instanceof AuthError ? 401 : 500
+    const isUpstreamError = e instanceof difyAdapter.errors.UpstreamError
+    const status = e instanceof AuthError ? 401 : isUpstreamError ? (e.status || 502) : 500
     return Response.json({
       error: e instanceof AuthError ? 'Unauthorized' : 'File upload request failed',
       context: 'file-upload',
       expected: e instanceof AuthError ? 'Authenticated Supabase session cookie' : 'Valid file payload and upstream response',
       received: e?.message || 'Unknown error',
+      upstreamStatus: isUpstreamError ? e.status : undefined,
+      upstreamCode: isUpstreamError ? e.upstreamCode : undefined,
+      upstreamOperation: isUpstreamError ? e.operation : undefined,
+      upstreamPayload: isUpstreamError ? e.upstreamPayload : undefined,
+      message: e?.message || 'Unknown error',
     }, { status })
   }
 }

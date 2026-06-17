@@ -38,6 +38,7 @@ const Main: FC<IMainProps> = () => {
   */
   const [appUnavailable, setAppUnavailable] = useState<boolean>(false)
   const [isUnknownReason, setIsUnknownReason] = useState<boolean>(false)
+  const [appUnavailableMessage, setAppUnavailableMessage] = useState<string>('')
   const [promptConfig, setPromptConfig] = useState<PromptConfig | null>(null)
   const [inited, setInited] = useState<boolean>(false)
   // in mobile, show sidebar by click button
@@ -277,13 +278,38 @@ const Main: FC<IMainProps> = () => {
         setInited(true)
       }
       catch (e: any) {
-        if (e.status === 404) {
-          setAppUnavailable(true)
+        let message = 'Request failed while loading app data. Check server-side Dify and Supabase configuration.'
+        let unknownReason = false
+
+        if (e?.status === 404) {
+          message = 'App configuration was not found (404). Check Dify app key and app availability.'
+        }
+        else if (typeof e?.status === 'number') {
+          try {
+            const payload = await e.json()
+            const context = payload?.context ? ` (${payload.context})` : ''
+            const received = payload?.received ? `: ${payload.received}` : ''
+            const upstreamStatus = payload?.upstreamStatus ? ` | upstreamStatus=${payload.upstreamStatus}` : ''
+            const upstreamCode = payload?.upstreamCode ? ` | upstreamCode=${payload.upstreamCode}` : ''
+            const upstreamOperation = payload?.upstreamOperation ? ` | upstreamOperation=${payload.upstreamOperation}` : ''
+            const upstreamPayload = payload?.upstreamPayload ? ` | upstreamPayload=${JSON.stringify(payload.upstreamPayload)}` : ''
+            message = `${payload?.error || `Request failed with status ${e.status}`}${context}${received}${upstreamStatus}${upstreamCode}${upstreamOperation}${upstreamPayload}`
+          }
+          catch {
+            message = `Request failed with status ${e.status}.`
+          }
+        }
+        else if (e?.message) {
+          message = e.message
         }
         else {
-          setIsUnknownReason(true)
-          setAppUnavailable(true)
+          unknownReason = true
         }
+
+        setIsUnknownReason(unknownReason)
+        setAppUnavailableMessage(message)
+        Toast.notify({ type: 'error', message })
+        setAppUnavailable(true)
       }
     })()
   }, [])
@@ -644,7 +670,7 @@ const Main: FC<IMainProps> = () => {
     )
   }
 
-  if (appUnavailable) { return <AppUnavailable isUnknownReason={isUnknownReason} errMessage={isUnknownReason ? '' : 'Request failed while loading app data. Check server-side Dify and Supabase configuration.'} /> }
+  if (appUnavailable) { return <AppUnavailable isUnknownReason={isUnknownReason} errMessage={isUnknownReason ? '' : appUnavailableMessage} /> }
 
   if (!APP_INFO || !promptConfig) { return <Loading type='app' /> }
 

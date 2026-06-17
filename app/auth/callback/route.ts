@@ -44,8 +44,14 @@ export async function GET(request: NextRequest) {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code)
   if (error) {
+    console.error('Supabase auth code exchange failed', {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+    })
     const signInUrl = new URL('/sign-in', requestUrl.origin)
     signInUrl.searchParams.set('authError', 'exchange_failed')
+    signInUrl.searchParams.set('authReason', error.message)
     return NextResponse.redirect(signInUrl)
   }
 

@@ -28,6 +28,7 @@ const SignInForm = ({ supabaseProjectUrl, supabasePublishableKey }: SignInFormPr
     return value
   }, [searchParams])
   const authError = searchParams.get('authError')
+  const authReason = searchParams.get('authReason')
   const supabase = useMemo(() => createBrowserClient(supabaseProjectUrl, supabasePublishableKey), [supabaseProjectUrl, supabasePublishableKey])
   const isPasswordMode = mode === 'password-sign-in' || mode === 'password-sign-up'
 
@@ -223,7 +224,11 @@ const SignInForm = ({ supabaseProjectUrl, supabasePublishableKey }: SignInFormPr
 
       {message && <p className="text-sm text-green-700">{message}</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {!error && authError && <p className="text-sm text-red-600">Authentication failed. Please try again.</p>}
+      {!error && authError && (
+        <p className="text-sm text-red-600">
+          Authentication failed. {authReason ? `Reason: ${authReason}` : 'Please try again.'}
+        </p>
+      )}
     </form>
   )
 }

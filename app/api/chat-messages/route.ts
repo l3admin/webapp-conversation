@@ -12,7 +12,8 @@ export async function POST(request: NextRequest) {
   }
   catch (error: any) {
     const isContractError = error instanceof difyAdapter.errors.ContractError
-    const status = error instanceof AuthError ? 401 : isContractError ? 400 : 500
+    const isUpstreamError = error instanceof difyAdapter.errors.UpstreamError
+    const status = error instanceof AuthError ? 401 : isContractError ? 400 : isUpstreamError ? (error.status || 502) : 500
     return Response.json({
       error: error instanceof AuthError ? 'Unauthorized' : isContractError ? 'Invalid chat payload contract' : 'Chat message request failed',
       context: 'chat-messages',
@@ -22,6 +23,11 @@ export async function POST(request: NextRequest) {
             ? 'Payload { inputs: object, query: string, conversation_id: string|null, response_mode: string, files?: array }'
             : 'Valid Dify request payload and available upstream API',
       received: error?.message || 'Unknown error',
+      upstreamStatus: isUpstreamError ? error.status : undefined,
+      upstreamCode: isUpstreamError ? error.upstreamCode : undefined,
+      upstreamOperation: isUpstreamError ? error.operation : undefined,
+      upstreamPayload: isUpstreamError ? error.upstreamPayload : undefined,
+      message: error?.message || 'Unknown error',
     }, { status })
   }
 }

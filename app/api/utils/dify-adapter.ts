@@ -15,8 +15,61 @@ class DifyContractError extends Error {
   }
 }
 
+class DifyUpstreamError extends Error {
+  status?: number
+  upstreamCode?: string
+  upstreamPayload?: unknown
+  operation: string
+
+  constructor({
+    message,
+    operation,
+    status,
+    upstreamCode,
+    upstreamPayload,
+  }: {
+    message: string
+    operation: string
+    status?: number
+    upstreamCode?: string
+    upstreamPayload?: unknown
+  }) {
+    super(message)
+    this.name = 'DifyUpstreamError'
+    this.operation = operation
+    this.status = status
+    this.upstreamCode = upstreamCode
+    this.upstreamPayload = upstreamPayload
+  }
+}
+
 const isObject = (value: unknown): value is Record<string, any> => {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+const normalizeUpstreamError = (error: any, operation: string): DifyUpstreamError => {
+  const status = typeof error?.response?.status === 'number' ? error.response.status : undefined
+  const payload = error?.response?.data
+  const upstreamCode = typeof payload?.code === 'string' ? payload.code : undefined
+  const upstreamMessage = typeof payload?.message === 'string' ? payload.message : undefined
+  const message = upstreamMessage || error?.message || `Dify request failed during ${operation}`
+
+  return new DifyUpstreamError({
+    message,
+    operation,
+    status,
+    upstreamCode,
+    upstreamPayload: payload,
+  })
+}
+
+const withDifyErrorHandling = async <T>(operation: string, fn: () => Promise<T>): Promise<T> => {
+  try {
+    return await fn()
+  }
+  catch (error: any) {
+    throw normalizeUpstreamError(error, operation)
+  }
 }
 
 const assertChatMessageBody = (body: unknown): ChatMessageBody => {
@@ -45,50 +98,65 @@ const assertChatMessageBody = (body: unknown): ChatMessageBody => {
 export const difyAdapter = {
   errors: {
     ContractError: DifyContractError,
+    UpstreamError: DifyUpstreamError,
   },
   parseChatMessageBody(body: unknown) {
     return assertChatMessageBody(body)
   },
   async createChatMessageStream(body: ChatMessageBody, user: string) {
-    const client = getClient()
-    const res = await client.createChatMessage(
-      body.inputs,
-      body.query,
-      user,
-      body.response_mode,
-      body.conversation_id,
-      body.files,
-    )
-    return res.data as any
+    return withDifyErrorHandling('createChatMessageStream', async () => {
+      const client = getClient()
+      const res = await client.createChatMessage(
+        body.inputs,
+        body.query,
+        user,
+        body.response_mode,
+        body.conversation_id,
+        body.files,
+      )
+      return res.data as any
+    })
   },
   async getConversations(user: string) {
-    const client = getClient()
-    const { data }: any = await client.getConversations(user)
-    return data
+    return withDifyErrorHandling('getConversations', async () => {
+      const client = getClient()
+      const { data }: any = await client.getConversations(user)
+      return data
+    })
   },
   async getApplicationParameters(user: string) {
-    const client = getClient()
-    const { data } = await client.getApplicationParameters(user)
-    return data
+    return withDifyErrorHandling('getApplicationParameters', async () => {
+      const client = getClient()
+      const { data } = await client.getApplicationParameters(user)
+      return data
+    })
   },
   async getConversationMessages(user: string, conversationId: string) {
-    const client = getClient()
-    const { data }: any = await client.getConversationMessages(user, conversationId)
-    return data
+    return withDifyErrorHandling('getConversationMessages', async () => {
+      const client = getClient()
+      const { data }: any = await client.getConversationMessages(user, conversationId)
+      return data
+    })
   },
   async messageFeedback(messageId: string, rating: any, user: string) {
-    const client = getClient()
-    const { data } = await client.messageFeedback(messageId, rating, user)
-    return data
+    return withDifyErrorHandling('messageFeedback', async () => {
+      const client = getClient()
+      const { data } = await client.messageFeedback(messageId, rating, user)
+      return data
+    })
   },
   async renameConversation(conversationId: string, name: string, user: string, autoGenerate: boolean) {
-    const client = getClient()
-    const { data } = await client.renameConversation(conversationId, name, user, autoGenerate)
-    return data
+    return withDifyErrorHandling('renameConversation', async () => {
+      const client = getClient()
+      const { data } = await client.renameConversation(conversationId, name, user, autoGenerate)
+      return data
+    })
   },
   async fileUpload(formData: FormData) {
-    const client = getClient()
-    const res = await client.fileUpload(formData)
-    return res.data.id as any
+    return withDifyErrorHandling('fileUpload', async () => {
+      const client = getClient()
+      const res = await client.fileUpload(formData)
+      return res.data.id as any
+    })
   },
 }
