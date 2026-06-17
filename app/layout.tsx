@@ -12,9 +12,12 @@ const LocaleLayout = async ({
   return (
     <html lang={locale ?? 'en'} className="h-full">
       <body className="h-full">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto relative">
           <div className="w-screen h-screen min-w-[300px]">
             {children}
+          </div>
+          <div className="fixed bottom-2 right-3 text-xs text-gray-400 select-none">
+            build 0.0.4
           </div>
         </div>
       </body>
