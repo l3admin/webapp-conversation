@@ -10,6 +10,9 @@ DIFY_API_BASE_URL=https://api.dify.ai/v1
 # Dify app API key for KN COLD agent (server-only)
 DIFY_APP_API_KEY_KN_COLD=
 
+# Dify app API key for KN CUSTOMER agent (server-only)
+DIFY_APP_API_KEY_KN_CUSTOMER=
+
 # Supabase project URL (public)
 NEXT_PUBLIC_SUPABASE_PROJECT_URL=
 

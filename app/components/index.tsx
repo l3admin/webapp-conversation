@@ -9,8 +9,8 @@ import Toast from '@/app/components/base/toast'
 import Sidebar from '@/app/components/sidebar'
 import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
-import { fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
-import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
+import { fetchAgents, fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
+import type { AgentItem, ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
 import Chat from '@/app/components/chat'
@@ -31,7 +31,9 @@ const Main: FC<IMainProps> = () => {
   const { t } = useTranslation()
   const media = useBreakpoints()
   const isMobile = media === MediaType.mobile
-  const conversationScopeKey = 'default'
+  const [agents, setAgents] = useState<AgentItem[]>([])
+  const [activeAgentId, setActiveAgentId] = useState('')
+  const conversationScopeKey = `agent:${activeAgentId || 'none'}`
 
   /*
   * app info
@@ -104,7 +106,7 @@ const Main: FC<IMainProps> = () => {
   const suggestedQuestions = currConversationInfo?.suggested_questions || []
 
   const handleConversationSwitch = () => {
-    if (!inited) { return }
+    if (!inited || !activeAgentId) { return }
 
     // update inputs of current conversation
     let notSyncToStateIntroduction = ''
@@ -127,7 +129,7 @@ const Main: FC<IMainProps> = () => {
 
     // update chat list of current conversation
     if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponding) {
-      fetchChatList(currConversationId).then((res: any) => {
+      fetchChatList(currConversationId, activeAgentId).then((res: any) => {
         const { data } = res
         const newChatList: ChatItem[] = generateNewChatListWithOpenStatement(notSyncToStateIntroduction, notSyncToStateInputs)
 
@@ -154,9 +156,10 @@ const Main: FC<IMainProps> = () => {
 
     if (isNewConversation && isChatStarted) { setChatList(generateNewChatListWithOpenStatement()) }
   }
-  useEffect(handleConversationSwitch, [currConversationId, inited])
+  useEffect(handleConversationSwitch, [currConversationId, inited, activeAgentId])
 
   const handleConversationIdChange = (id: string) => {
+    if (!activeAgentId) { return }
     if (id === '-1') {
       createNewChat()
       setConversationIdChangeBecauseOfNew(true)
@@ -225,11 +228,40 @@ const Main: FC<IMainProps> = () => {
   useEffect(() => {
     (async () => {
       try {
-        const [conversationData, appParams] = await Promise.all([fetchConversations(), fetchAppParams()])
+        const agentData = await fetchAgents()
+        const availableAgents = agentData?.data || []
+        const defaultAgentId = agentData?.default_agent_id || availableAgents[0]?.id
+        if (!defaultAgentId) {
+          throw new Error('No agents are configured for this user.')
+        }
+        setAgents(availableAgents)
+        setActiveAgentId(defaultAgentId)
+      }
+      catch (e: any) {
+        const message = e?.message || 'Failed to load available agents.'
+        setAppUnavailableMessage(message)
+        setIsUnknownReason(false)
+        setAppUnavailable(true)
+        Toast.notify({ type: 'error', message })
+      }
+    })()
+  }, [])
+
+  useEffect(() => {
+    if (!activeAgentId) { return }
+    setAppUnavailable(false)
+    setInited(false)
+    setPromptConfig(null)
+    setConversationList([])
+    setChatList([])
+    setCurrConversationId('-1', conversationScopeKey, false)
+    ;(async () => {
+      try {
+        const [conversationData, appParams] = await Promise.all([fetchConversations(activeAgentId), fetchAppParams(activeAgentId)])
         // handle current conversation id
         const { data: conversations, error } = conversationData as { data: ConversationItem[], error: string }
         if (error) {
-          Toast.notify({ type: 'error', message: error })
+          Toast.notify({ type: 'error', message: `${error} | agent_id=${activeAgentId}` })
           throw new Error(error)
           return
         }
@@ -312,7 +344,7 @@ const Main: FC<IMainProps> = () => {
         setAppUnavailable(true)
       }
     })()
-  }, [])
+  }, [activeAgentId])
 
   const [isResponding, { setTrue: setRespondingTrue, setFalse: setRespondingFalse }] = useBoolean(false)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
@@ -448,7 +480,7 @@ const Main: FC<IMainProps> = () => {
     let tempNewConversationId = ''
 
     setRespondingTrue()
-    sendChatMessage(data, {
+    sendChatMessage(data, activeAgentId, {
       getAbortController: (abortController) => {
         setAbortController(abortController)
       },
@@ -484,8 +516,8 @@ const Main: FC<IMainProps> = () => {
         if (hasError) { return }
 
         if (getConversationIdChangeBecauseOfNew()) {
-          const { data: allConversations }: any = await fetchConversations()
-          const newItem: any = await generationConversationName(allConversations[0].id)
+          const { data: allConversations }: any = await fetchConversations(activeAgentId)
+          const newItem: any = await generationConversationName(allConversations[0].id, activeAgentId)
 
           const newAllConversations = produce(allConversations, (draft: any) => {
             draft[0].name = newItem.name
@@ -644,7 +676,7 @@ const Main: FC<IMainProps> = () => {
   }
 
   const handleFeedback = async (messageId: string, feedback: Feedbacktype) => {
-    await updateFeedback({ url: `/messages/${messageId}/feedbacks`, body: { rating: feedback.rating } })
+    await updateFeedback({ url: `/messages/${messageId}/feedbacks`, body: { rating: feedback.rating }, agentId: activeAgentId })
     const newChatList = chatList.map((item) => {
       if (item.id === messageId) {
         return {
@@ -672,7 +704,7 @@ const Main: FC<IMainProps> = () => {
 
   if (appUnavailable) { return <AppUnavailable isUnknownReason={isUnknownReason} errMessage={isUnknownReason ? '' : appUnavailableMessage} /> }
 
-  if (!APP_INFO || !promptConfig) { return <Loading type='app' /> }
+  if (!APP_INFO || !promptConfig || !activeAgentId) { return <Loading type='app' /> }
 
   return (
     <div className='bg-gray-100'>
@@ -681,6 +713,17 @@ const Main: FC<IMainProps> = () => {
         isMobile={isMobile}
         onShowSideBar={showSidebar}
         onCreateNewChat={() => handleConversationIdChange('-1')}
+        agents={agents}
+        activeAgentId={activeAgentId}
+        onAgentChange={(agentId) => {
+          if (isResponding) {
+            notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
+            return
+          }
+          if (agentId === activeAgentId) { return }
+          setActiveAgentId(agentId)
+        }}
+        disableAgentSwitch={isResponding}
       />
       <div className="flex rounded-t-2xl bg-white overflow-hidden">
         {/* sidebar */}

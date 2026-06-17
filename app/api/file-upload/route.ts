@@ -1,13 +1,15 @@
 import type { NextRequest } from 'next/server'
-import { AuthError, getInfo } from '@/app/api/utils/common'
+import { AuthError, getInfo, resolveAgentId } from '@/app/api/utils/common'
 import { difyAdapter } from '@/app/api/utils/dify-adapter'
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const { user } = await getInfo(request)
+    const bodyAgentId = typeof formData.get('agent_id') === 'string' ? String(formData.get('agent_id')) : null
+    const agentId = resolveAgentId(request, bodyAgentId)
     formData.append('user', user)
-    const fileId = await difyAdapter.fileUpload(formData)
+    const fileId = await difyAdapter.fileUpload(agentId, formData)
     return new Response(fileId)
   }
   catch (e: any) {

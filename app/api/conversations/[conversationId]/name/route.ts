@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { AuthError, getInfo } from '@/app/api/utils/common'
+import { AuthError, getInfo, resolveAgentId } from '@/app/api/utils/common'
 import { difyAdapter } from '@/app/api/utils/dify-adapter'
 
 export async function POST(request: NextRequest, { params }: {
@@ -14,9 +14,10 @@ export async function POST(request: NextRequest, { params }: {
     } = body
     const { conversationId } = await params
     const { user } = await getInfo(request)
+    const agentId = resolveAgentId(request, body?.agent_id || null)
 
     // auto generate name
-    const data = await difyAdapter.renameConversation(conversationId, name, user, auto_generate)
+    const data = await difyAdapter.renameConversation(agentId, conversationId, name, user, auto_generate)
     return NextResponse.json(data)
   }
   catch (error: any) {

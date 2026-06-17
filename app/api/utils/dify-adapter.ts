@@ -1,6 +1,7 @@
 import { getClient } from '@/app/api/utils/common'
 
 type ChatMessageBody = {
+  agent_id?: string
   inputs: Record<string, any>
   query: string
   files?: any[]
@@ -79,6 +80,9 @@ const assertChatMessageBody = (body: unknown): ChatMessageBody => {
   if (!isObject(body.inputs)) {
     throw new DifyContractError('Chat payload contract mismatch: `inputs` must be an object.')
   }
+  if (body.agent_id !== undefined && typeof body.agent_id !== 'string') {
+    throw new DifyContractError('Chat payload contract mismatch: `agent_id` must be a string when provided.')
+  }
   if (typeof body.query !== 'string') {
     throw new DifyContractError('Chat payload contract mismatch: `query` must be a string.')
   }
@@ -103,9 +107,9 @@ export const difyAdapter = {
   parseChatMessageBody(body: unknown) {
     return assertChatMessageBody(body)
   },
-  async createChatMessageStream(body: ChatMessageBody, user: string) {
+  async createChatMessageStream(agentId: string, body: ChatMessageBody, user: string) {
     return withDifyErrorHandling('createChatMessageStream', async () => {
-      const client = getClient()
+      const client = getClient(agentId)
       const res = await client.createChatMessage(
         body.inputs,
         body.query,
@@ -117,44 +121,44 @@ export const difyAdapter = {
       return res.data as any
     })
   },
-  async getConversations(user: string) {
+  async getConversations(agentId: string, user: string) {
     return withDifyErrorHandling('getConversations', async () => {
-      const client = getClient()
+      const client = getClient(agentId)
       const { data }: any = await client.getConversations(user)
       return data
     })
   },
-  async getApplicationParameters(user: string) {
+  async getApplicationParameters(agentId: string, user: string) {
     return withDifyErrorHandling('getApplicationParameters', async () => {
-      const client = getClient()
+      const client = getClient(agentId)
       const { data } = await client.getApplicationParameters(user)
       return data
     })
   },
-  async getConversationMessages(user: string, conversationId: string) {
+  async getConversationMessages(agentId: string, user: string, conversationId: string) {
     return withDifyErrorHandling('getConversationMessages', async () => {
-      const client = getClient()
+      const client = getClient(agentId)
       const { data }: any = await client.getConversationMessages(user, conversationId)
       return data
     })
   },
-  async messageFeedback(messageId: string, rating: any, user: string) {
+  async messageFeedback(agentId: string, messageId: string, rating: any, user: string) {
     return withDifyErrorHandling('messageFeedback', async () => {
-      const client = getClient()
+      const client = getClient(agentId)
       const { data } = await client.messageFeedback(messageId, rating, user)
       return data
     })
   },
-  async renameConversation(conversationId: string, name: string, user: string, autoGenerate: boolean) {
+  async renameConversation(agentId: string, conversationId: string, name: string, user: string, autoGenerate: boolean) {
     return withDifyErrorHandling('renameConversation', async () => {
-      const client = getClient()
+      const client = getClient(agentId)
       const { data } = await client.renameConversation(conversationId, name, user, autoGenerate)
       return data
     })
   },
-  async fileUpload(formData: FormData) {
+  async fileUpload(agentId: string, formData: FormData) {
     return withDifyErrorHandling('fileUpload', async () => {
-      const client = getClient()
+      const client = getClient(agentId)
       const res = await client.fileUpload(formData)
       return res.data.id as any
     })

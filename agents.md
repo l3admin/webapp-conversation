@@ -25,7 +25,9 @@ Set these in `.env.local` and in Cloud Run service env vars:
 - `DIFY_API_BASE_URL`  
   Example: `https://api.dify.ai/v1`
 - `DIFY_APP_API_KEY_KN_COLD`
-  Current active agent key expected by server code.
+  Dify key for KN_COLD.
+- `DIFY_APP_API_KEY_KN_CUSTOMER`
+  Dify key for KN_CUSTOMER.
 - `NEXT_PUBLIC_SUPABASE_PROJECT_URL`  
   Supabase project URL (public).
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`  
@@ -86,6 +88,7 @@ For role/profile-based agent access:
 - Store user-to-agent access in Supabase tables.
 - Resolve allowed agent at request time in server routes.
 - Keep per-agent Dify keys in a secret store (recommended: Google Secret Manager), not in frontend or public env vars.
+- Current implementation supports environment-backed multi-agent routing for `KN_COLD` and `KN_CUSTOMER`, with client-side agent switching.
 
 ## Dify Upgrade Strategy
 

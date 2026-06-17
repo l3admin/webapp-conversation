@@ -106,6 +106,11 @@ export interface ConversationItem {
   suggested_questions?: string[]
 }
 
+export interface AgentItem {
+  id: string
+  name: string
+}
+
 export interface AppInfo {
   title: string
   description: string

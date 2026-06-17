@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { AuthError, getInfo } from '@/app/api/utils/common'
+import { AuthError, getInfo, resolveAgentId } from '@/app/api/utils/common'
 import { difyAdapter } from '@/app/api/utils/dify-adapter'
 
 export async function POST(request: NextRequest) {
@@ -7,7 +7,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const parsedBody = difyAdapter.parseChatMessageBody(body)
     const { user } = await getInfo(request)
-    const streamBody = await difyAdapter.createChatMessageStream(parsedBody, user)
+    const agentId = resolveAgentId(request, parsedBody.agent_id || null)
+    const streamBody = await difyAdapter.createChatMessageStream(agentId, parsedBody, user)
     return new Response(streamBody)
   }
   catch (error: any) {

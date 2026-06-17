@@ -1,12 +1,13 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { AuthError, getInfo } from '@/app/api/utils/common'
+import { AuthError, getInfo, resolveAgentId } from '@/app/api/utils/common'
 import { difyAdapter } from '@/app/api/utils/dify-adapter'
 
 export async function GET(request: NextRequest) {
   try {
     const { user } = await getInfo(request)
-    const data = await difyAdapter.getApplicationParameters(user)
+    const agentId = resolveAgentId(request)
+    const data = await difyAdapter.getApplicationParameters(agentId, user)
     return NextResponse.json(data as object)
   }
   catch (error: any) {
