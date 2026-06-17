@@ -1,15 +1,17 @@
-import type { FC } from 'react'
 import React from 'react'
+import { redirect } from 'next/navigation'
 
-import type { IMainProps } from '@/app/components'
 import Main from '@/app/components'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 
-const App: FC<IMainProps> = ({
-  params,
-}: any) => {
-  return (
-    <Main params={params} />
-  )
+const App = async () => {
+  const supabase = await createSupabaseServerClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) {
+    redirect('/sign-in')
+  }
+
+  return <Main params={{}} />
 }
 
-export default React.memo(App)
+export default App

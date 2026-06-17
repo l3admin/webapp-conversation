@@ -14,6 +14,10 @@ NEXT_PUBLIC_APP_KEY=
 
 # APP URL: This is the API's base URL. If you're using the Dify cloud service, set it to: https://api.dify.ai/v1.
 NEXT_PUBLIC_API_URL=
+
+# Supabase URL and public anon key are used for email magic-link authentication.
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
 Config more in `config/index.ts` file:   

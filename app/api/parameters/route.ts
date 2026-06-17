@@ -1,16 +1,20 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { client, getInfo, setSession } from '@/app/api/utils/common'
+import { AuthError, client, getInfo } from '@/app/api/utils/common'
 
 export async function GET(request: NextRequest) {
-  const { sessionId, user } = getInfo(request)
   try {
+    const { user } = await getInfo(request)
     const { data } = await client.getApplicationParameters(user)
-    return NextResponse.json(data as object, {
-      headers: setSession(sessionId),
-    })
+    return NextResponse.json(data as object)
   }
-  catch (error) {
-    return NextResponse.json([])
+  catch (error: any) {
+    const status = error instanceof AuthError ? 401 : 500
+    return NextResponse.json({
+      error: error instanceof AuthError ? 'Unauthorized' : 'Parameters request failed',
+      context: 'parameters',
+      expected: error instanceof AuthError ? 'Authenticated Supabase session cookie' : 'Valid Dify upstream response',
+      received: error?.message || 'Unknown error',
+    }, { status })
   }
 }
