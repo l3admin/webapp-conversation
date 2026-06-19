@@ -182,11 +182,23 @@ const handleStream = (
               })
               return
             }
-            if (bufferObj.status === 400 || !bufferObj.event) {
+            if ((typeof bufferObj.status === 'number' && bufferObj.status >= 400) || !bufferObj.event) {
               onData('', false, {
                 conversationId: undefined,
                 messageId: '',
-                errorMessage: bufferObj?.message,
+                errorMessage: bufferObj?.message || `Invalid SSE payload. status=${bufferObj?.status ?? 'unknown'}`,
+                errorCode: bufferObj?.code,
+              })
+              hasError = true
+              onCompleted?.(true)
+              return
+            }
+
+            if (bufferObj.event === 'error') {
+              onData('', false, {
+                conversationId: undefined,
+                messageId: '',
+                errorMessage: bufferObj?.message || 'Upstream stream emitted error event.',
                 errorCode: bufferObj?.code,
               })
               hasError = true

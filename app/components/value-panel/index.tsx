@@ -3,8 +3,7 @@ import type { FC, ReactNode } from 'react'
 import React from 'react'
 import cn from 'classnames'
 import { useTranslation } from 'react-i18next'
-import s from './style.module.css'
-import { StarIcon } from '@/app/components//welcome/massive-component'
+import { StarIcon } from '@/app/components/welcome/massive-component'
 import Button from '@/app/components/base/button'
 
 export interface ITemplateVarPanelProps {
@@ -21,10 +20,10 @@ const TemplateVarPanel: FC<ITemplateVarPanelProps> = ({
   isFold,
 }) => {
   return (
-    <div className={cn(isFold ? 'border border-indigo-100' : s.boxShodow, className, 'rounded-xl ')}>
+    <div className={cn('border border-indigo-100 rounded-xl', className)}>
       {/* header */}
       <div
-        className={cn(isFold && 'rounded-b-xl', 'rounded-t-xl px-6 py-4 bg-indigo-25 text-xs')}
+        className={cn(isFold && 'rounded-b-xl', 'rounded-t-xl px-6 py-4 bg-indigo-50 text-xs')}
       >
         {header}
       </div>
@@ -58,16 +57,16 @@ export const VarOpBtnGroup: FC<{ className?: string, onConfirm: () => void, onCa
   const { t } = useTranslation()
 
   return (
-    <div className={cn(className, 'flex mt-3 space-x-2 mobile:ml-0 tablet:ml-[128px] text-sm')}>
+    <div className={cn(className, 'flex mt-3 space-x-2 mobile:ml-0 tablet:ml-[128px] text-xs')}>
       <Button
-        className='text-sm'
+        className='text-xs font-semibold'
         type='primary'
         onClick={onConfirm}
       >
         {t('common.operation.save')}
       </Button>
       <Button
-        className='text-sm'
+        className='text-xs font-semibold'
         onClick={onCancel}
       >
         {t('common.operation.cancel')}

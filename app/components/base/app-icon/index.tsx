@@ -1,4 +1,5 @@
 import type { FC } from 'react'
+import { useState } from 'react'
 import classNames from 'classnames'
 import style from './style.module.css'
 
@@ -15,7 +16,10 @@ const AppIcon: FC<AppIconProps> = ({
   rounded = false,
   background,
   className,
+  icon = '/Parzley_logo.png',
 }) => {
+  const [hasImageError, setHasImageError] = useState(false)
+
   return (
     <span
       className={classNames(
@@ -28,7 +32,16 @@ const AppIcon: FC<AppIconProps> = ({
         background,
       }}
     >
-      🤖
+      {!hasImageError
+        ? (
+          <img
+            src={icon}
+            alt="Parzley"
+            className={style.logo}
+            onError={() => setHasImageError(true)}
+          />
+        )
+        : <span className={style.fallback}>PZ</span>}
     </span>
   )
 }

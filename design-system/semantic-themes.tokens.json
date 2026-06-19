@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Parzley semantic UI tokens (portable)",
+  "description": "Machine-readable theme tokens aligned with utils/semanticThemes.ts. Use with external-build-ui-seed.md.",
+  "version": "2026-05-16",
+  "brand": {
+    "parzleyGreen": "#4C9B2D",
+    "workflowPrimaryHex": "#4F46E5",
+    "workflowSecondaryHex": "#4338ca"
+  },
+  "themes": {
+    "primaryWorkflow": {
+      "key": "primaryWorkflow",
+      "tailwindFamily": "indigo",
+      "meaning": "Active operational work, in-progress jobs, primary product workflow",
+      "border": "border-indigo-200",
+      "borderHover": "hover:border-indigo-300",
+      "background": "bg-indigo-50",
+      "backgroundMuted": "bg-indigo-50/40",
+      "backgroundHover": "hover:bg-indigo-100",
+      "accentText": "text-indigo-700",
+      "accentTextMuted": "text-indigo-600",
+      "accentTextStrong": "text-indigo-900",
+      "filledButton": "bg-indigo-600",
+      "filledButtonHover": "hover:bg-indigo-700",
+      "outlineButtonBorder": "border-indigo-200",
+      "outlineButtonText": "text-indigo-700",
+      "outlineButtonBgHover": "hover:bg-indigo-50",
+      "pillBackground": "bg-indigo-100",
+      "pillText": "text-indigo-800",
+      "ringSubtle": "ring-1 ring-indigo-100"
+    },
+    "userAuthored": {
+      "key": "userAuthored",
+      "tailwindFamily": "emerald",
+      "meaning": "User-created, editable, owned content",
+      "border": "border-emerald-200",
+      "borderHover": "hover:border-emerald-300",
+      "background": "bg-emerald-50",
+      "backgroundMuted": "bg-emerald-50/40",
+      "backgroundHover": "hover:bg-emerald-100",
+      "accentText": "text-emerald-700",
+      "accentTextMuted": "text-emerald-600",
+      "accentTextStrong": "text-emerald-900",
+      "filledButton": "bg-emerald-600",
+      "filledButtonHover": "hover:bg-emerald-700",
+      "outlineButtonBorder": "border-emerald-200",
+      "outlineButtonText": "text-emerald-700",
+      "outlineButtonBgHover": "hover:bg-emerald-50",
+      "pillBackground": "bg-emerald-100",
+      "pillText": "text-emerald-800",
+      "ringSubtle": "ring-1 ring-emerald-100"
+    },
+    "curatedLibrary": {
+      "key": "curatedLibrary",
+      "tailwindFamily": "fuchsia",
+      "meaning": "System-provided, official, read-only library or catalogue items",
+      "border": "border-fuchsia-200",
+      "borderHover": "hover:border-fuchsia-300",
+      "background": "bg-fuchsia-50",
+      "backgroundMuted": "bg-fuchsia-50/40",
+      "backgroundHover": "hover:bg-fuchsia-100",
+      "accentText": "text-fuchsia-700",
+      "accentTextMuted": "text-fuchsia-600",
+      "accentTextStrong": "text-fuchsia-900",
+      "filledButton": "bg-fuchsia-600",
+      "filledButtonHover": "hover:bg-fuchsia-700",
+      "outlineButtonBorder": "border-fuchsia-200",
+      "outlineButtonText": "text-fuchsia-700",
+      "outlineButtonBgHover": "hover:bg-fuchsia-50",
+      "pillBackground": "bg-fuchsia-100",
+      "pillText": "text-fuchsia-800",
+      "ringSubtle": "ring-1 ring-fuchsia-100"
+    }
+  },
+  "commerceNeutral": {
+    "tailwindFamily": "slate",
+    "meaning": "Purchases, billing, generic utility, diagnostics tooling",
+    "filledButton": "bg-slate-800",
+    "filledButtonHover": "hover:bg-slate-900",
+    "outlineButtonBorder": "border-slate-200",
+    "outlineButtonText": "text-slate-700",
+    "outlineButtonBgHover": "hover:bg-slate-50",
+    "panelBorder": "border-slate-200",
+    "panelBackground": "bg-white",
+    "mutedText": "text-slate-600",
+    "strongText": "text-slate-900"
+  },
+  "appShell": {
+    "body": "bg-gray-50 text-gray-900 antialiased",
+    "surface": "bg-white",
+    "divider": "border-gray-200",
+    "mutedLabel": "text-gray-600",
+    "strongLabel": "text-gray-800"
+  },
+  "denseListAccents": {
+    "description": "Optional secondary pairing for compact list UIs (not the main three themes)",
+    "officialNeutral": {
+      "icon": "text-slate-600",
+      "badge": "border-slate-200 bg-slate-100 text-slate-800",
+      "rowHover": "hover:bg-slate-50/80"
+    },
+    "userWarm": {
+      "icon": "text-amber-700",
+      "badge": "border-amber-200 bg-amber-50 text-amber-900",
+      "rowHover": "hover:bg-amber-50/50"
+    }
+  },
+  "status": {
+    "description": "Separate from semantic object identity — use sparingly",
+    "error": "text-rose-600 border-rose-200 bg-rose-50",
+    "warning": "text-amber-600 border-amber-200 bg-amber-50",
+    "success": "text-emerald-600",
+    "infoNeutral": "text-slate-600 border-slate-200 bg-slate-50"
+  }
+}

@@ -7,10 +7,9 @@ Create a file named `.env.local` in the current directory and copy the contents 
 # Dify API base URL (server-only)
 DIFY_API_BASE_URL=https://api.dify.ai/v1
 
-# Dify app API key for KN COLD agent (server-only)
+# Dify app API keys (server-only), one per agent:
+# DIFY_APP_API_KEY_<AGENT_ID>=
 DIFY_APP_API_KEY_KN_COLD=
-
-# Dify app API key for KN CUSTOMER agent (server-only)
 DIFY_APP_API_KEY_KN_CUSTOMER=
 
 # Supabase project URL (public)
@@ -18,6 +17,9 @@ NEXT_PUBLIC_SUPABASE_PROJECT_URL=
 
 # Supabase publishable/anon key (public)
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+
+# Supabase secret key (server-only, required for admin APIs)
+SUPABASE_SECRET_KEY=
 ```
 
 Config more in `config/index.ts` file:   

@@ -10,7 +10,7 @@ type SignInFormProps = {
   supabasePublishableKey: string
 }
 
-type AuthMode = 'password-sign-in' | 'password-sign-up' | 'magic-link'
+type AuthMode = 'password-sign-in' | 'magic-link'
 
 const SignInForm = ({ supabaseProjectUrl, supabasePublishableKey }: SignInFormProps) => {
   const searchParams = useSearchParams()
@@ -30,7 +30,7 @@ const SignInForm = ({ supabaseProjectUrl, supabasePublishableKey }: SignInFormPr
   const authError = searchParams.get('authError')
   const authReason = searchParams.get('authReason')
   const supabase = useMemo(() => createBrowserClient(supabaseProjectUrl, supabasePublishableKey), [supabaseProjectUrl, supabasePublishableKey])
-  const isPasswordMode = mode === 'password-sign-in' || mode === 'password-sign-up'
+  const isPasswordMode = mode === 'password-sign-in'
 
   const resetFeedback = () => {
     setMessage('')
@@ -59,27 +59,6 @@ const SignInForm = ({ supabaseProjectUrl, supabasePublishableKey }: SignInFormPr
           throw error
         }
         globalThis.location.assign(redirectTo)
-        return
-      }
-
-      if (mode === 'password-sign-up') {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: callbackUrl.toString(),
-          },
-        })
-        if (error) {
-          throw error
-        }
-
-        if (data.session) {
-          globalThis.location.assign(redirectTo)
-          return
-        }
-
-        setMessage('Account created. Check your email to confirm your account before signing in.')
         return
       }
 
@@ -134,33 +113,27 @@ const SignInForm = ({ supabaseProjectUrl, supabasePublishableKey }: SignInFormPr
   return (
     <form className="w-full max-w-md space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm" onSubmit={handleSubmit}>
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold text-gray-900">Sign in</h1>
-        <p className="text-sm text-gray-600">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Parzley Workspace</p>
+        <h1 className="text-2xl font-black tracking-tight text-gray-900">Sign in</h1>
+        <p className="text-sm font-medium leading-relaxed text-gray-700">
           {isPasswordMode
             ? 'Use your email and password. You can still use magic link if needed.'
-            : 'Enter your email and we will send a secure magic link.'}
+            : 'Enter your invited email and we will send a secure magic link.'}
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => setAuthMode('password-sign-in')}
-          className={`rounded-md border px-2 py-1 text-xs ${mode === 'password-sign-in' ? 'border-indigo-600 text-indigo-700 bg-indigo-50' : 'border-gray-300 text-gray-600'}`}
+          className={`rounded-md border px-2 py-1 text-xs font-bold transition-colors ${mode === 'password-sign-in' ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100' : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
         >
           Password
         </button>
         <button
           type="button"
-          onClick={() => setAuthMode('password-sign-up')}
-          className={`rounded-md border px-2 py-1 text-xs ${mode === 'password-sign-up' ? 'border-indigo-600 text-indigo-700 bg-indigo-50' : 'border-gray-300 text-gray-600'}`}
-        >
-          Sign up
-        </button>
-        <button
-          type="button"
           onClick={() => setAuthMode('magic-link')}
-          className={`rounded-md border px-2 py-1 text-xs ${mode === 'magic-link' ? 'border-indigo-600 text-indigo-700 bg-indigo-50' : 'border-gray-300 text-gray-600'}`}
+          className={`rounded-md border px-2 py-1 text-xs font-bold transition-colors ${mode === 'magic-link' ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100' : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'}`}
         >
           Magic link
         </button>
@@ -175,7 +148,7 @@ const SignInForm = ({ supabaseProjectUrl, supabasePublishableKey }: SignInFormPr
         value={email}
         onChange={e => setEmail(e.target.value)}
         required
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-200"
         placeholder="you@example.com"
       />
 
@@ -190,9 +163,9 @@ const SignInForm = ({ supabaseProjectUrl, supabasePublishableKey }: SignInFormPr
             value={password}
             onChange={e => setPassword(e.target.value)}
             required={isPasswordMode}
-            minLength={8}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            placeholder="At least 8 characters"
+            minLength={6}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-200"
+            placeholder="At least 6 characters"
           />
         </>
       )}
@@ -200,15 +173,13 @@ const SignInForm = ({ supabaseProjectUrl, supabasePublishableKey }: SignInFormPr
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-indigo-400"
+        className="w-full rounded-lg border border-transparent bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
       >
         {isSubmitting
           ? 'Working...'
           : mode === 'password-sign-in'
               ? 'Sign in'
-              : mode === 'password-sign-up'
-                  ? 'Create account'
-                  : 'Send magic link'}
+              : 'Send magic link'}
       </button>
 
       {isPasswordMode && (
@@ -216,7 +187,7 @@ const SignInForm = ({ supabaseProjectUrl, supabasePublishableKey }: SignInFormPr
           type="button"
           disabled={isSubmitting}
           onClick={handlePasswordReset}
-          className="w-full text-xs text-indigo-700 underline disabled:text-gray-400"
+          className="w-full text-xs font-semibold text-indigo-700 underline decoration-indigo-300 underline-offset-2 disabled:text-gray-400"
         >
           Forgot password? Send reset link
         </button>

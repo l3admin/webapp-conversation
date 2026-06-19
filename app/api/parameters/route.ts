@@ -5,8 +5,8 @@ import { difyAdapter } from '@/app/api/utils/dify-adapter'
 
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await getInfo(request)
-    const agentId = resolveAgentId(request)
+    const { user, authUserId } = await getInfo(request)
+    const agentId = await resolveAgentId(request, authUserId)
     const data = await difyAdapter.getApplicationParameters(agentId, user)
     return NextResponse.json(data as object)
   }

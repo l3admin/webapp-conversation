@@ -1,5 +1,5 @@
 .appIcon {
-  @apply flex items-center justify-center relative w-9 h-9 text-lg bg-teal-100 rounded-lg grow-0 shrink-0;
+  @apply flex items-center justify-center relative w-9 h-9 rounded-lg grow-0 shrink-0 overflow-hidden bg-transparent;
 }
 
 .appIcon.large {
@@ -20,4 +20,12 @@
 
 .appIcon.rounded {
   @apply rounded-full;
+}
+
+.logo {
+  @apply w-full h-full object-contain;
+}
+
+.fallback {
+  @apply font-mono text-[11px] font-black tracking-wide text-emerald-700;
 }

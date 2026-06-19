@@ -109,6 +109,75 @@ export interface ConversationItem {
 export interface AgentItem {
   id: string
   name: string
+  button_label: string | null
+  description?: string | null
+}
+
+export interface ViewerProfile {
+  user_id: string
+  display_name: string | null
+  initials: string
+  avatar_url: string | null
+  is_master_admin: boolean
+}
+
+export interface UserProfile {
+  user_id: string
+  display_name: string | null
+  first_name: string | null
+  last_name: string | null
+  initials_override: string | null
+  avatar_url: string | null
+  is_master_admin: boolean
+  is_disabled: boolean
+  must_change_password: boolean
+  password_changed_at: string | null
+}
+
+export interface AdminOverview {
+  total_users: number
+  total_customers: number
+  total_agent_catalog: number
+  total_customer_agent_assignments: number
+  total_user_customer_assignments: number
+}
+
+export interface AdminAgentCatalogItem {
+  agent_id: string
+  display_name: string
+  button_label: string | null
+  description: string | null
+  is_active: boolean
+}
+
+export interface AdminCustomerItem {
+  id: string
+  slug: string
+  display_name: string
+  status: string
+}
+
+export interface AdminUserItem {
+  user_id: string
+  email: string
+  first_name: string | null
+  last_name: string | null
+  display_name: string | null
+  is_master_admin: boolean
+  is_disabled: boolean
+  must_change_password: boolean
+  customer_ids: string[]
+}
+
+export interface AdminAgentAccessRow {
+  user_id: string
+  email: string
+  customer_id: string | null
+  customer_slug: string | null
+  customer_display_name: string | null
+  user_disabled: boolean
+  assigned_agents: string[]
+  default_agent_id: string | null
 }
 
 export interface AppInfo {

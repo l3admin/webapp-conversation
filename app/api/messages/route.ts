@@ -5,8 +5,8 @@ import { difyAdapter } from '@/app/api/utils/dify-adapter'
 
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await getInfo(request)
-    const agentId = resolveAgentId(request)
+    const { user, authUserId } = await getInfo(request)
+    const agentId = await resolveAgentId(request, authUserId)
     const { searchParams } = new URL(request.url)
     const conversationId = searchParams.get('conversation_id')
     const data = await difyAdapter.getConversationMessages(agentId, user, conversationId as string)

@@ -6,8 +6,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const parsedBody = difyAdapter.parseChatMessageBody(body)
-    const { user } = await getInfo(request)
-    const agentId = resolveAgentId(request, parsedBody.agent_id || null)
+    const { user, authUserId } = await getInfo(request)
+    const agentId = await resolveAgentId(request, authUserId, parsedBody.agent_id || null)
     const streamBody = await difyAdapter.createChatMessageStream(agentId, parsedBody, user)
     return new Response(streamBody)
   }

@@ -1,16 +1,17 @@
 'use client'
 import type { FC } from 'react'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import produce, { setAutoFreeze } from 'immer'
 import { useBoolean, useGetState } from 'ahooks'
+import { createBrowserClient } from '@supabase/ssr'
 import useConversation from '@/hooks/use-conversation'
 import Toast from '@/app/components/base/toast'
 import Sidebar from '@/app/components/sidebar'
 import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
-import { fetchAgents, fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
-import type { AgentItem, ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
+import { fetchAgents, fetchAppParams, fetchChatList, fetchConversations, fetchProfile, generationConversationName, sendChatMessage, updateFeedback, updateMyPassword, updateProfile } from '@/service'
+import type { AgentItem, ChatItem, ConversationItem, Feedbacktype, PromptConfig, UserProfile, ViewerProfile, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
 import Chat from '@/app/components/chat'
@@ -19,7 +20,7 @@ import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
 import Loading from '@/app/components/base/loading'
 import { replaceVarWithValues, userInputsFormToPromptVariables } from '@/utils/prompt'
 import AppUnavailable from '@/app/components/app-unavailable'
-import { APP_INFO, isShowPrompt, promptTemplate } from '@/config'
+import { APP_BUILD_VERSION, APP_INFO, isShowPrompt, promptTemplate } from '@/config'
 import type { Annotation as AnnotationType } from '@/types/log'
 import { addFileInfos, sortAgentSorts } from '@/utils/tools'
 
@@ -32,8 +33,33 @@ const Main: FC<IMainProps> = () => {
   const media = useBreakpoints()
   const isMobile = media === MediaType.mobile
   const [agents, setAgents] = useState<AgentItem[]>([])
+  const [viewer, setViewer] = useState<ViewerProfile | null>(null)
+  const [adminDifyBaseUrl, setAdminDifyBaseUrl] = useState('')
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [isUpdatingProfilePassword, setIsUpdatingProfilePassword] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
+  const [profileDraft, setProfileDraft] = useState({
+    display_name: '',
+    first_name: '',
+    last_name: '',
+    initials_override: '',
+  })
+  const [profilePasswordDraft, setProfilePasswordDraft] = useState('')
+  const [profilePasswordConfirmDraft, setProfilePasswordConfirmDraft] = useState('')
+  const [profileCurrentPasswordDraft, setProfileCurrentPasswordDraft] = useState('')
   const [activeAgentId, setActiveAgentId] = useState('')
   const conversationScopeKey = `agent:${activeAgentId || 'none'}`
+  const activeAgent = agents.find(agent => agent.id === activeAgentId)
+  const activeAgentName = activeAgent?.name || 'Agent'
+  const withAgentPrefix = (name: string) => {
+    const trimmedName = name.trim()
+    const prefix = `${activeAgentName}: `
+    if (!trimmedName) { return prefix.trim() }
+    if (trimmedName.startsWith(prefix)) { return trimmedName }
+    return `${prefix}${trimmedName}`
+  }
 
   /*
   * app info
@@ -52,9 +78,17 @@ const Main: FC<IMainProps> = () => {
     transfer_methods: [TransferMethod.local_file],
   })
   const [fileConfig, setFileConfig] = useState<FileUpload | undefined>()
+  const supabaseClient = useMemo(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_PROJECT_URL || ''
+    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+    if (!url || !key) {
+      return null
+    }
+    return createBrowserClient(url, key)
+  }, [])
 
   useEffect(() => {
-    if (APP_INFO?.title) { document.title = `${APP_INFO.title} - Powered by Dify` }
+    if (APP_INFO?.title) { document.title = APP_INFO.title }
   }, [APP_INFO?.title])
 
   // onData change thought (the produce obj). https://github.com/immerjs/immer/issues/576
@@ -86,27 +120,25 @@ const Main: FC<IMainProps> = () => {
   } = useConversation()
 
   const [conversationIdChangeBecauseOfNew, setConversationIdChangeBecauseOfNew, getConversationIdChangeBecauseOfNew] = useGetState(false)
-  const [isChatStarted, { setTrue: setChatStarted, setFalse: setChatNotStarted }] = useBoolean(false)
-  const handleStartChat = (inputs: Record<string, any>) => {
-    createNewChat()
-    setConversationIdChangeBecauseOfNew(true)
-    setCurrInputs(inputs)
-    setChatStarted()
-    // parse variables in introduction
-    setChatList(generateNewChatListWithOpenStatement('', inputs))
-  }
-  const hasSetInputs = (() => {
-    if (!isNewConversation) { return true }
+  const hasSetInputs = !isNewConversation
 
-    return isChatStarted
-  })()
-
-  const conversationName = currConversationInfo?.name || t('app.chat.newChatDefaultName') as string
+  const conversationName = withAgentPrefix(currConversationInfo?.name || t('app.chat.newChatDefaultName') as string)
   const conversationIntroduction = currConversationInfo?.introduction || ''
   const suggestedQuestions = currConversationInfo?.suggested_questions || []
 
   const handleConversationSwitch = () => {
     if (!inited || !activeAgentId) { return }
+
+    // Guard against stale conversation IDs when switching agents.
+    // If the current id is not in the loaded list for this agent scope,
+    // reset deterministically to new conversation instead of requesting
+    // /messages for a non-existent conversation.
+    if (!isNewConversation && !conversationList.some(item => item.id === currConversationId)) {
+      setConversationIdChangeBecauseOfNew(false)
+      setCurrConversationId('-1', conversationScopeKey, false)
+      setChatList(generateNewChatListWithOpenStatement())
+      return
+    }
 
     // update inputs of current conversation
     let notSyncToStateIntroduction = ''
@@ -117,7 +149,7 @@ const Main: FC<IMainProps> = () => {
       setCurrInputs(notSyncToStateInputs as any)
       notSyncToStateIntroduction = item?.introduction || ''
       setExistConversationInfo({
-        name: item?.name || '',
+        name: withAgentPrefix(item?.name || ''),
         introduction: notSyncToStateIntroduction,
         suggested_questions: suggestedQuestions,
       })
@@ -129,32 +161,41 @@ const Main: FC<IMainProps> = () => {
 
     // update chat list of current conversation
     if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponding) {
-      fetchChatList(currConversationId, activeAgentId).then((res: any) => {
-        const { data } = res
-        const newChatList: ChatItem[] = generateNewChatListWithOpenStatement(notSyncToStateIntroduction, notSyncToStateInputs)
+      fetchChatList(currConversationId, activeAgentId)
+        .then((res: any) => {
+          const { data } = res
+          const newChatList: ChatItem[] = generateNewChatListWithOpenStatement(notSyncToStateIntroduction, notSyncToStateInputs)
 
-        data.forEach((item: any) => {
-          newChatList.push({
-            id: `question-${item.id}`,
-            content: item.query,
-            isAnswer: false,
-            message_files: item.message_files?.filter((file: any) => file.belongs_to === 'user') || [],
+          data.forEach((item: any) => {
+            newChatList.push({
+              id: `question-${item.id}`,
+              content: item.query,
+              isAnswer: false,
+              useCurrentUserAvatar: true,
+              message_files: item.message_files?.filter((file: any) => file.belongs_to === 'user') || [],
 
+            })
+            newChatList.push({
+              id: item.id,
+              content: item.answer,
+              agent_thoughts: addFileInfos(item.agent_thoughts ? sortAgentSorts(item.agent_thoughts) : item.agent_thoughts, item.message_files),
+              feedback: item.feedback,
+              isAnswer: true,
+              message_files: item.message_files?.filter((file: any) => file.belongs_to === 'assistant') || [],
+            })
           })
-          newChatList.push({
-            id: item.id,
-            content: item.answer,
-            agent_thoughts: addFileInfos(item.agent_thoughts ? sortAgentSorts(item.agent_thoughts) : item.agent_thoughts, item.message_files),
-            feedback: item.feedback,
-            isAnswer: true,
-            message_files: item.message_files?.filter((file: any) => file.belongs_to === 'assistant') || [],
-          })
+          setChatList(newChatList)
         })
-        setChatList(newChatList)
-      })
+        .catch(() => {
+          // Conversation can disappear upstream while still present locally.
+          // Reset deterministically to new conversation for this agent scope.
+          setConversationIdChangeBecauseOfNew(false)
+          setCurrConversationId('-1', conversationScopeKey, false)
+          setChatList(generateNewChatListWithOpenStatement())
+        })
     }
 
-    if (isNewConversation && isChatStarted) { setChatList(generateNewChatListWithOpenStatement()) }
+    if (isNewConversation) { setChatList(generateNewChatListWithOpenStatement()) }
   }
   useEffect(handleConversationSwitch, [currConversationId, inited, activeAgentId])
 
@@ -175,19 +216,18 @@ const Main: FC<IMainProps> = () => {
   /*
   * chat info. chat is under conversation.
   */
+  const [isResponding, { setTrue: setRespondingTrue, setFalse: setRespondingFalse }] = useBoolean(false)
   const [chatList, setChatList, getChatList] = useGetState<ChatItem[]>([])
-  const chatListDomRef = useRef<HTMLDivElement>(null)
+  const chatScrollContainerRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    // scroll to bottom with page-level scrolling
-    if (chatListDomRef.current) {
-      setTimeout(() => {
-        chatListDomRef.current?.scrollIntoView({
-          behavior: 'auto',
-          block: 'end',
-        })
-      }, 50)
-    }
-  }, [chatList, currConversationId])
+    const scrollContainer = chatScrollContainerRef.current
+    if (!scrollContainer)
+      return
+
+    window.requestAnimationFrame(() => {
+      scrollContainer.scrollTop = scrollContainer.scrollHeight
+    })
+  }, [chatList, currConversationId, isResponding])
   // user can not edit inputs if user had send message
   const canEditInputs = !chatList.some(item => item.isAnswer === false) && isNewConversation
   const createNewChat = () => {
@@ -197,7 +237,7 @@ const Main: FC<IMainProps> = () => {
     setConversationList(produce(conversationList, (draft) => {
       draft.unshift({
         id: '-1',
-        name: t('app.chat.newChatDefaultName'),
+        name: withAgentPrefix(t('app.chat.newChatDefaultName')),
         inputs: newConversationInputs,
         introduction: conversationIntroduction,
         suggested_questions: suggestedQuestions,
@@ -231,10 +271,16 @@ const Main: FC<IMainProps> = () => {
         const agentData = await fetchAgents()
         const availableAgents = agentData?.data || []
         const defaultAgentId = agentData?.default_agent_id || availableAgents[0]?.id
+        const viewerData = agentData?.viewer
+        if (!viewerData?.user_id || !viewerData?.initials) {
+          throw new Error(`Invalid viewer contract from /api/agents. received=${JSON.stringify(viewerData)}`)
+        }
         if (!defaultAgentId) {
           throw new Error('No agents are configured for this user.')
         }
         setAgents(availableAgents)
+        setViewer(viewerData)
+        setAdminDifyBaseUrl(agentData?.admin_debug?.dify_base_url || '')
         setActiveAgentId(defaultAgentId)
       }
       catch (e: any) {
@@ -251,7 +297,6 @@ const Main: FC<IMainProps> = () => {
     if (!activeAgentId) { return }
     setAppUnavailable(false)
     setInited(false)
-    setPromptConfig(null)
     setConversationList([])
     setChatList([])
     setCurrConversationId('-1', conversationScopeKey, false)
@@ -273,13 +318,13 @@ const Main: FC<IMainProps> = () => {
         const { user_input_form, opening_statement: introduction, file_upload, system_parameters, suggested_questions = [] }: any = appParams
         setLocaleOnClient(APP_INFO.default_language, true)
         setNewConversationInfo({
-          name: t('app.chat.newChatDefaultName'),
+          name: withAgentPrefix(t('app.chat.newChatDefaultName')),
           introduction,
           suggested_questions,
         })
         if (isNotNewConversation) {
           setExistConversationInfo({
-            name: currentConversation.name || t('app.chat.newChatDefaultName'),
+            name: withAgentPrefix(currentConversation.name || t('app.chat.newChatDefaultName')),
             introduction,
             suggested_questions,
           })
@@ -303,7 +348,10 @@ const Main: FC<IMainProps> = () => {
           number_limits: file_upload?.number_limits,
           fileUploadConfig: file_upload?.fileUploadConfig,
         })
-        setConversationList(conversations as ConversationItem[])
+        setConversationList((conversations as ConversationItem[]).map(conversation => ({
+          ...conversation,
+          name: withAgentPrefix(conversation.name || t('app.chat.newChatDefaultName')),
+        })))
 
         if (isNotNewConversation) { setCurrConversationId(_conversationId, conversationScopeKey, false) }
 
@@ -346,11 +394,181 @@ const Main: FC<IMainProps> = () => {
     })()
   }, [activeAgentId])
 
-  const [isResponding, { setTrue: setRespondingTrue, setFalse: setRespondingFalse }] = useBoolean(false)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
   const { notify } = Toast
   const logError = (message: string) => {
     notify({ type: 'error', message })
+  }
+
+  const normalizeInputValue = (value: string) => {
+    const trimmed = value.trim()
+    return trimmed || null
+  }
+
+  const getPasswordValidationError = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return 'Password is required.'
+    }
+    if (trimmed.length < 6) {
+      return 'Password must be at least 6 characters.'
+    }
+    const hasLetter = /[a-zA-Z]/.test(trimmed)
+    const hasNumber = /\d/.test(trimmed)
+    if (!hasLetter || !hasNumber) {
+      return 'Password must contain at least one letter and one number.'
+    }
+    return null
+  }
+
+  const getRequestErrorMessage = async (error: any, fallback: string) => {
+    if (!error) {
+      return fallback
+    }
+    if (typeof error?.message === 'string' && error.message.trim()) {
+      return error.message
+    }
+    if (typeof error?.json === 'function') {
+      try {
+        const payload = await error.json()
+        if (typeof payload?.received === 'string' && payload.received.trim()) {
+          return payload.received
+        }
+        if (typeof payload?.error === 'string' && payload.error.trim()) {
+          return payload.error
+        }
+        if (typeof payload?.message === 'string' && payload.message.trim()) {
+          return payload.message
+        }
+      }
+      catch {
+        return fallback
+      }
+    }
+    return fallback
+  }
+
+  const openProfileModal = async () => {
+    try {
+      const response = await fetchProfile()
+      setProfile(response.profile)
+      setViewer(response.viewer)
+      setProfileDraft({
+        display_name: response.profile.display_name || '',
+        first_name: response.profile.first_name || '',
+        last_name: response.profile.last_name || '',
+        initials_override: response.profile.initials_override || '',
+      })
+      setProfilePasswordDraft('')
+      setProfilePasswordConfirmDraft('')
+      setProfileCurrentPasswordDraft('')
+      setIsProfileOpen(true)
+    }
+    catch (e: any) {
+      logError(e?.message || 'Failed to load profile.')
+    }
+  }
+
+  const closeProfileModal = () => {
+    if (isSavingProfile || isUpdatingProfilePassword)
+      return
+    setIsProfileOpen(false)
+    setProfileCurrentPasswordDraft('')
+    setProfilePasswordDraft('')
+    setProfilePasswordConfirmDraft('')
+  }
+
+  const handleOpenAdminConsole = () => {
+    setIsProfileOpen(false)
+    globalThis.location.assign('/admin')
+  }
+
+  const handleSignOut = async () => {
+    if (isSigningOut) {
+      return
+    }
+    if (!supabaseClient) {
+      logError('Missing Supabase client configuration for sign out.')
+      return
+    }
+    setIsSigningOut(true)
+    try {
+      const { error } = await supabaseClient.auth.signOut()
+      if (error) {
+        throw error
+      }
+      globalThis.location.assign('/sign-in')
+    }
+    catch (e: any) {
+      logError(e?.message || 'Failed to sign out.')
+    }
+    finally {
+      setIsSigningOut(false)
+    }
+  }
+
+  const handleSaveProfile = async () => {
+    if (isSavingProfile)
+      return
+
+    setIsSavingProfile(true)
+    try {
+      const response = await updateProfile({
+        first_name: normalizeInputValue(profileDraft.first_name),
+        last_name: normalizeInputValue(profileDraft.last_name),
+        display_name: normalizeInputValue(profileDraft.display_name),
+        initials_override: normalizeInputValue(profileDraft.initials_override),
+        avatar_url: profile?.avatar_url || null,
+      })
+      setProfile(response.profile)
+      setViewer(response.viewer)
+      setIsProfileOpen(false)
+      notify({ type: 'success', message: t('common.api.success') })
+    }
+    catch (e: any) {
+      logError(e?.message || 'Failed to save profile.')
+    }
+    finally {
+      setIsSavingProfile(false)
+    }
+  }
+
+  const handleUpdateProfilePassword = async () => {
+    if (isUpdatingProfilePassword) {
+      return
+    }
+    const passwordValidationError = getPasswordValidationError(profilePasswordDraft)
+    if (passwordValidationError) {
+      logError(passwordValidationError)
+      return
+    }
+    if (profilePasswordDraft !== profilePasswordConfirmDraft) {
+      logError('Passwords do not match.')
+      return
+    }
+    if (!profileCurrentPasswordDraft.trim()) {
+      logError('Current password is required.')
+      return
+    }
+
+    setIsUpdatingProfilePassword(true)
+    try {
+      await updateMyPassword({
+        current_password: profileCurrentPasswordDraft,
+        password: profilePasswordDraft,
+      })
+      setProfileCurrentPasswordDraft('')
+      setProfilePasswordDraft('')
+      setProfilePasswordConfirmDraft('')
+      notify({ type: 'success', message: 'Password updated successfully.' })
+    }
+    catch (e: any) {
+      const message = await getRequestErrorMessage(e, 'Failed to update password.')
+      logError(message)
+    }
+    finally {
+      setIsUpdatingProfilePassword(false)
+    }
   }
 
   const checkCanSend = () => {
@@ -415,6 +633,11 @@ const Main: FC<IMainProps> = () => {
       notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
       return
     }
+    if (isNewConversation) {
+      createNewChat()
+      setConversationIdChangeBecauseOfNew(true)
+    }
+
     const toServerInputs: Record<string, any> = {}
     if (currInputs) {
       Object.keys(currInputs).forEach((key) => {
@@ -451,6 +674,7 @@ const Main: FC<IMainProps> = () => {
       id: questionId,
       content: message,
       isAnswer: false,
+      useCurrentUserAvatar: true,
       message_files: (files || []).filter((f: any) => f.type === 'image'),
     }
 
@@ -478,6 +702,15 @@ const Main: FC<IMainProps> = () => {
 
     const prevTempNewConversationId = getCurrConversationId() || '-1'
     let tempNewConversationId = ''
+    let streamTaskId = ''
+    const removePlaceholderAnswer = () => {
+      setChatList(produce(getChatList(), (draft) => {
+        const placeholderIndex = draft.findIndex(item => item.id === placeholderAnswerId)
+        if (placeholderIndex !== -1) {
+          draft.splice(placeholderIndex, 1)
+        }
+      }))
+    }
 
     setRespondingTrue()
     sendChatMessage(data, activeAgentId, {
@@ -499,7 +732,10 @@ const Main: FC<IMainProps> = () => {
 
         if (isFirstMessage && newConversationId) { tempNewConversationId = newConversationId }
 
-        setMessageTaskId(taskId)
+        if (taskId) {
+          streamTaskId = taskId
+          setMessageTaskId(taskId)
+        }
         // has switched to other conversation
         if (prevTempNewConversationId !== getCurrConversationId()) {
           setIsRespondingConCurrCon(false)
@@ -513,20 +749,39 @@ const Main: FC<IMainProps> = () => {
         })
       },
       async onCompleted(hasError?: boolean) {
-        if (hasError) { return }
+        if (hasError) {
+          setRespondingFalse()
+          removePlaceholderAnswer()
+          return
+        }
+
+        const hasRenderedAssistantOutput
+          = !!responseItem.content?.trim()
+            || !!responseItem.agent_thoughts?.length
+            || !!responseItem.message_files?.length
+            || !!responseItem.annotation
+
+        if (!hasRenderedAssistantOutput) {
+          setRespondingFalse()
+          removePlaceholderAnswer()
+          logError(`Assistant stream completed without content. agent_id=${activeAgentId} conversation_id=${tempNewConversationId || prevTempNewConversationId} task_id=${streamTaskId || 'unknown'} question_id=${questionId}`)
+          return
+        }
 
         if (getConversationIdChangeBecauseOfNew()) {
           const { data: allConversations }: any = await fetchConversations(activeAgentId)
           const newItem: any = await generationConversationName(allConversations[0].id, activeAgentId)
 
           const newAllConversations = produce(allConversations, (draft: any) => {
-            draft[0].name = newItem.name
+            draft[0].name = withAgentPrefix(newItem.name)
           })
-          setConversationList(newAllConversations as any)
+          setConversationList((newAllConversations as ConversationItem[]).map(conversation => ({
+            ...conversation,
+            name: withAgentPrefix(conversation.name || t('app.chat.newChatDefaultName')),
+          })))
         }
         setConversationIdChangeBecauseOfNew(false)
         resetNewConversationInputs()
-        setChatNotStarted()
         setCurrConversationId(tempNewConversationId, conversationScopeKey, true)
         setRespondingFalse()
       },
@@ -621,10 +876,7 @@ const Main: FC<IMainProps> = () => {
       },
       onError() {
         setRespondingFalse()
-        // role back placeholder answer
-        setChatList(produce(getChatList(), (draft) => {
-          draft.splice(draft.findIndex(item => item.id === placeholderAnswerId), 1)
-        }))
+        removePlaceholderAnswer()
       },
       onWorkflowStarted: ({ workflow_run_id, task_id }) => {
         // taskIdRef.current = task_id
@@ -698,6 +950,7 @@ const Main: FC<IMainProps> = () => {
         onCurrentIdChange={handleConversationIdChange}
         currentId={currConversationId}
         copyRight={APP_INFO.copyright || APP_INFO.title}
+        version={APP_BUILD_VERSION}
       />
     )
   }
@@ -707,13 +960,20 @@ const Main: FC<IMainProps> = () => {
   if (!APP_INFO || !promptConfig || !activeAgentId) { return <Loading type='app' /> }
 
   return (
-    <div className='bg-gray-100'>
+    <div className='h-full overflow-hidden bg-gray-50'>
       <Header
-        title={APP_INFO.title}
         isMobile={isMobile}
         onShowSideBar={showSidebar}
         onCreateNewChat={() => handleConversationIdChange('-1')}
         agents={agents}
+        viewerInitials={viewer?.initials || 'U'}
+        onOpenProfile={openProfileModal}
+        technicalInfo={viewer?.is_master_admin
+          ? {
+              active_agent_id: activeAgentId,
+              dify_base_url: adminDifyBaseUrl,
+            }
+          : null}
         activeAgentId={activeAgentId}
         onAgentChange={(agentId) => {
           if (isResponding) {
@@ -721,11 +981,15 @@ const Main: FC<IMainProps> = () => {
             return
           }
           if (agentId === activeAgentId) { return }
+          setConversationIdChangeBecauseOfNew(false)
+          setCurrConversationId('-1', `agent:${agentId}`, false)
+          setChatList([])
+          setInited(false)
           setActiveAgentId(agentId)
         }}
         disableAgentSwitch={isResponding}
       />
-      <div className="flex rounded-t-2xl bg-white overflow-hidden">
+      <div className="flex h-[calc(100%_-_3rem)] bg-white overflow-hidden">
         {/* sidebar */}
         {!isMobile && renderSidebar()}
         {isMobile && isShowSidebar && (
@@ -736,26 +1000,29 @@ const Main: FC<IMainProps> = () => {
           </div>
         )}
         {/* main */}
-        <div className='flex-grow flex flex-col h-[calc(100vh_-_3rem)] overflow-y-auto'>
+        <div ref={chatScrollContainerRef} className='flex-grow flex flex-col h-full overflow-y-auto overflow-x-hidden'>
           <ConfigSence
             conversationName={conversationName}
             hasSetInputs={hasSetInputs}
             isPublicVersion={isShowPrompt}
             siteInfo={APP_INFO}
+            agentName={activeAgent?.name}
+            agentDescription={activeAgent?.description || null}
             promptConfig={promptConfig}
-            onStartChat={handleStartChat}
             canEditInputs={canEditInputs}
             savedInputs={currInputs as Record<string, any>}
             onInputsChange={setCurrInputs}
           ></ConfigSence>
 
           {
-            hasSetInputs && (
-              <div className='relative grow pc:w-[794px] max-w-full mobile:w-full pb-[180px] mx-auto mb-3.5' ref={chatListDomRef}>
+            (hasSetInputs || isNewConversation) && (
+              <div className='relative min-h-0 grow w-[90%] mx-auto mb-3.5'>
                 <Chat
                   chatList={chatList}
                   onSend={handleSend}
                   onFeedback={handleFeedback}
+                  useCurrentUserAvatar
+                  userInitials={viewer?.initials || 'U'}
                   isResponding={isResponding}
                   checkCanSend={checkCanSend}
                   visionConfig={visionConfig}
@@ -765,6 +1032,132 @@ const Main: FC<IMainProps> = () => {
           }
         </div>
       </div>
+      {isProfileOpen && (
+        <div className='fixed inset-0 z-50 bg-black/20' onClick={closeProfileModal}>
+          <div className='h-full w-full flex items-center justify-center p-4' onClick={e => e.stopPropagation()}>
+            <div className='w-full max-w-md rounded-xl border border-gray-200 bg-white p-5 shadow-xl'>
+              <div className='mb-4'>
+                <h2 className='text-lg font-bold tracking-tight text-gray-900'>Profile settings</h2>
+                <p className='text-sm text-gray-600 mt-1'>Control how your name and initials appear in chat.</p>
+              </div>
+              <div className='space-y-3'>
+                <label className='block text-xs font-semibold text-gray-700'>
+                  Display name
+                  <input
+                    type='text'
+                    value={profileDraft.display_name}
+                    onChange={e => setProfileDraft({ ...profileDraft, display_name: e.target.value })}
+                    className='mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200'
+                    placeholder='Name shown in app'
+                  />
+                </label>
+                <label className='block text-xs font-semibold text-gray-700'>
+                  First name
+                  <input
+                    type='text'
+                    value={profileDraft.first_name}
+                    onChange={e => setProfileDraft({ ...profileDraft, first_name: e.target.value })}
+                    className='mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200'
+                    placeholder='Optional first name'
+                  />
+                </label>
+                <label className='block text-xs font-semibold text-gray-700'>
+                  Last name
+                  <input
+                    type='text'
+                    value={profileDraft.last_name}
+                    onChange={e => setProfileDraft({ ...profileDraft, last_name: e.target.value })}
+                    className='mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200'
+                    placeholder='Optional last name'
+                  />
+                </label>
+                <label className='block text-xs font-semibold text-gray-700'>
+                  Initials override
+                  <input
+                    type='text'
+                    value={profileDraft.initials_override}
+                    onChange={e => setProfileDraft({ ...profileDraft, initials_override: e.target.value })}
+                    className='mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200'
+                    placeholder='1-4 letters'
+                  />
+                </label>
+                <div className='rounded-lg border border-gray-200 bg-gray-50 p-3'>
+                  <h3 className='text-xs font-semibold text-gray-700'>Update password</h3>
+                  <div className='mt-2 grid gap-2'>
+                    <input
+                      type='password'
+                      value={profileCurrentPasswordDraft}
+                      onChange={e => setProfileCurrentPasswordDraft(e.target.value)}
+                      className='w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200'
+                      placeholder='Current password'
+                    />
+                    <input
+                      type='password'
+                      value={profilePasswordDraft}
+                      onChange={e => setProfilePasswordDraft(e.target.value)}
+                      className='w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200'
+                      placeholder='New password'
+                      minLength={6}
+                    />
+                    <input
+                      type='password'
+                      value={profilePasswordConfirmDraft}
+                      onChange={e => setProfilePasswordConfirmDraft(e.target.value)}
+                      className='w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200'
+                      placeholder='Confirm new password'
+                      minLength={6}
+                    />
+                    <p className='text-[11px] text-gray-600'>Password must be at least 6 characters and include at least one letter and one number.</p>
+                    <button
+                      type='button'
+                      onClick={handleUpdateProfilePassword}
+                      disabled={isUpdatingProfilePassword || isSavingProfile || isSigningOut}
+                      className='h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400'
+                    >
+                      {isUpdatingProfilePassword ? 'Updating password...' : 'Update password'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className='mt-5 flex items-center justify-end gap-2'>
+                {viewer?.is_master_admin && (
+                  <button
+                    type='button'
+                    onClick={handleOpenAdminConsole}
+                    className='h-9 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-700 hover:bg-indigo-100'
+                  >
+                    Admin Console
+                  </button>
+                )}
+                <button
+                  type='button'
+                  disabled={isSigningOut || isUpdatingProfilePassword}
+                  className='h-9 rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400'
+                  onClick={handleSignOut}
+                >
+                  {isSigningOut ? 'Signing out...' : 'Log out'}
+                </button>
+                <button
+                  type='button'
+                  onClick={closeProfileModal}
+                  disabled={isSavingProfile || isSigningOut || isUpdatingProfilePassword}
+                  className='h-9 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400'
+                >
+                  Cancel
+                </button>
+                <button
+                  type='button'
+                  onClick={handleSaveProfile}
+                  disabled={isSavingProfile || isSigningOut || isUpdatingProfilePassword}
+                  className='h-9 rounded-lg border border-transparent bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400'
+                >
+                  {isSavingProfile ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

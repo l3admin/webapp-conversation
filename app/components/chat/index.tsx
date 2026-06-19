@@ -2,6 +2,7 @@
 import type { FC } from 'react'
 import React, { useEffect, useRef } from 'react'
 import cn from 'classnames'
+import { Mic, MicOff } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import Textarea from 'rc-textarea'
 import s from './style.module.css'
@@ -33,6 +34,7 @@ export interface IChatProps {
   checkCanSend?: () => boolean
   onSend?: (message: string, files: VisionFile[]) => void
   useCurrentUserAvatar?: boolean
+  userInitials?: string
   isResponding?: boolean
   controlClearQuery?: number
   visionConfig?: VisionSettings
@@ -47,6 +49,7 @@ const Chat: FC<IChatProps> = ({
   checkCanSend,
   onSend = () => { },
   useCurrentUserAvatar,
+  userInitials = 'U',
   isResponding,
   controlClearQuery,
   visionConfig,
@@ -55,9 +58,13 @@ const Chat: FC<IChatProps> = ({
   const { t } = useTranslation()
   const { notify } = Toast
   const isUseInputMethod = useRef(false)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const baseQueryRef = useRef('')
 
   const [query, setQuery] = React.useState('')
   const queryRef = useRef('')
+  const [isListening, setIsListening] = React.useState(false)
+  const [isSpeechSupported, setIsSpeechSupported] = React.useState(false)
 
   const handleContentChange = (e: any) => {
     const value = e.target.value
@@ -84,6 +91,46 @@ const Chat: FC<IChatProps> = ({
       queryRef.current = ''
     }
   }, [controlClearQuery])
+
+  useEffect(() => {
+    if (typeof window === 'undefined')
+      return
+
+    const SpeechRecognitionCtor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognitionCtor)
+      return
+
+    const recognition: SpeechRecognition = new SpeechRecognitionCtor()
+    recognition.lang = 'en-US'
+    recognition.interimResults = true
+    recognition.continuous = true
+
+    recognition.onstart = () => setIsListening(true)
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => {
+      setIsListening(false)
+      notify({ type: 'error', message: 'Speech recognition failed. Please check microphone permissions and try again.' })
+    }
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcripts = Array.from(event.results).map(result => result[0]?.transcript || '')
+      const combined = transcripts.join(' ').trim()
+      const nextValue = [baseQueryRef.current, combined].filter(Boolean).join(baseQueryRef.current ? ' ' : '')
+      setQuery(nextValue)
+      queryRef.current = nextValue
+    }
+
+    recognitionRef.current = recognition
+    setIsSpeechSupported(true)
+
+    return () => {
+      recognition.onstart = null
+      recognition.onend = null
+      recognition.onerror = null
+      recognition.onresult = null
+      recognition.stop()
+      recognitionRef.current = null
+    }
+  }, [])
   const {
     files,
     onUpload,
@@ -147,10 +194,25 @@ const Chat: FC<IChatProps> = ({
     handleSend()
   }
 
+  const toggleSpeechInput = () => {
+    if (!isSpeechSupported || !recognitionRef.current) {
+      notify({ type: 'error', message: 'Speech-to-text is not supported in this browser.' })
+      return
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop()
+      return
+    }
+
+    baseQueryRef.current = queryRef.current.trim()
+    recognitionRef.current.start()
+  }
+
   return (
     <div className={cn(!feedbackDisabled && 'px-3.5', 'h-full')}>
       {/* Chat List */}
-      <div className="h-full space-y-[30px]">
+      <div className="min-h-full space-y-[30px] pb-[180px]">
         {chatList.map((item) => {
           if (item.isAnswer) {
             const isLast = item.id === chatList[chatList.length - 1].id
@@ -169,6 +231,7 @@ const Chat: FC<IChatProps> = ({
               id={item.id}
               content={item.content}
               useCurrentUserAvatar={useCurrentUserAvatar}
+              userInitials={userInitials}
               imgSrcs={(item.message_files && item.message_files?.length > 0) ? item.message_files.map(item => item.url) : []}
             />
           )
@@ -176,66 +239,86 @@ const Chat: FC<IChatProps> = ({
       </div>
       {
         !isHideSendInput && (
-          <div className='fixed z-10 bottom-0 left-1/2 transform -translate-x-1/2 pc:ml-[122px] tablet:ml-[96px] mobile:ml-0 pc:w-[794px] tablet:w-[794px] max-w-full mobile:w-full px-3.5'>
-            <div className='p-[5.5px] max-h-[150px] bg-white border-[1.5px] border-gray-200 rounded-xl overflow-y-auto'>
-              {
-                visionConfig?.enabled && (
-                  <>
-                    <div className='absolute bottom-2 left-2 flex items-center'>
-                      <ChatImageUploader
-                        settings={visionConfig}
-                        onUpload={onUpload}
-                        disabled={files.length >= visionConfig.number_limits}
-                      />
-                      <div className='mx-1 w-[1px] h-4 bg-black/5' />
-                    </div>
-                    <div className='pl-[52px]'>
-                      <ImageList
-                        list={files}
-                        onRemove={onRemove}
-                        onReUpload={onReUpload}
-                        onImageLinkLoadSuccess={onImageLinkLoadSuccess}
-                        onImageLinkLoadError={onImageLinkLoadError}
-                      />
-                    </div>
-                  </>
-                )
-              }
-              {
-                fileConfig?.enabled && (
-                  <div className={`${visionConfig?.enabled ? 'pl-[52px]' : ''} mb-1`}>
-                    <FileUploaderInAttachmentWrapper
-                      fileConfig={fileConfig}
-                      value={attachmentFiles}
-                      onChange={setAttachmentFiles}
-                    />
-                  </div>
-                )
-              }
-              <Textarea
-                className={`
-                  block w-full px-2 pr-[118px] py-[7px] leading-5 max-h-none text-base text-gray-700 outline-none appearance-none resize-none
-                  ${visionConfig?.enabled && 'pl-12'}
-                `}
-                value={query}
-                onChange={handleContentChange}
-                onKeyUp={handleKeyUp}
-                onKeyDown={handleKeyDown}
-                autoSize
-              />
-              <div className="absolute bottom-2 right-6 flex items-center h-8">
-                <div className={`${s.count} mr-3 h-5 leading-5 text-sm bg-gray-50 text-gray-500 px-2 rounded`}>{query.trim().length}</div>
-                <Tooltip
-                  selector='send-tip'
-                  htmlContent={
-                    <div>
-                      <div>{t('common.operation.send')} Enter</div>
-                      <div>{t('common.operation.lineBreak')} Shift Enter</div>
-                    </div>
+          <div className='fixed z-10 bottom-0 right-0 pc:left-[244px] tablet:left-[192px] mobile:left-0 px-3.5 pb-3'>
+            <div className='w-[90%] mx-auto rounded-xl border border-gray-200 bg-gray-50 p-2'>
+              <div className='flex items-center gap-2'>
+                <div className='relative flex-1 max-h-[150px] overflow-y-auto rounded-lg border border-gray-200 bg-white p-[5.5px]'>
+                  {
+                    visionConfig?.enabled && (
+                      <>
+                        <div className='absolute bottom-2 left-2 flex items-center'>
+                          <ChatImageUploader
+                            settings={visionConfig}
+                            onUpload={onUpload}
+                            disabled={files.length >= visionConfig.number_limits}
+                          />
+                          <div className='mx-1 w-[1px] h-4 bg-black/5' />
+                        </div>
+                        <div className='pl-[52px]'>
+                          <ImageList
+                            list={files}
+                            onRemove={onRemove}
+                            onReUpload={onReUpload}
+                            onImageLinkLoadSuccess={onImageLinkLoadSuccess}
+                            onImageLinkLoadError={onImageLinkLoadError}
+                          />
+                        </div>
+                      </>
+                    )
                   }
-                >
-                  <div className={`${s.sendBtn} w-8 h-8 cursor-pointer rounded-md`} onClick={handleSend}></div>
-                </Tooltip>
+                  {
+                    fileConfig?.enabled && (
+                      <div className={`${visionConfig?.enabled ? 'pl-[52px]' : ''} mb-1`}>
+                        <FileUploaderInAttachmentWrapper
+                          fileConfig={fileConfig}
+                          value={attachmentFiles}
+                          onChange={setAttachmentFiles}
+                        />
+                      </div>
+                    )
+                  }
+                  <Textarea
+                    className={`
+                      block w-full px-2 py-[7px] leading-5 max-h-none text-base text-gray-700 outline-none appearance-none resize-none
+                      ${visionConfig?.enabled ? 'pl-12' : ''}
+                    `}
+                    value={query}
+                    onChange={handleContentChange}
+                    onKeyUp={handleKeyUp}
+                    onKeyDown={handleKeyDown}
+                    autoSize
+                  />
+                </div>
+                <div className='flex shrink-0 items-center gap-2 self-center pr-1'>
+                  {query.trim().length > 0 && <div className={`${s.count} h-5 leading-5 text-sm bg-white text-gray-500 px-2 rounded`}>{query.trim().length}</div>}
+                  <Tooltip
+                    selector='mic-tip'
+                    htmlContent={<div>{isListening ? 'Stop voice input' : 'Start voice input'}</div>}
+                  >
+                    <button
+                      type='button'
+                      onClick={toggleSpeechInput}
+                      className={`h-8 w-8 rounded-md border transition-colors flex items-center justify-center ${
+                        isListening
+                          ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                          : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                      }`}
+                    >
+                      {isListening ? <MicOff className='h-4 w-4' strokeWidth={2} /> : <Mic className='h-4 w-4' strokeWidth={2} />}
+                    </button>
+                  </Tooltip>
+                  <Tooltip
+                    selector='send-tip'
+                    htmlContent={
+                      <div>
+                        <div>{t('common.operation.send')} Enter</div>
+                        <div>{t('common.operation.lineBreak')} Shift Enter</div>
+                      </div>
+                    }
+                  >
+                    <div className={`${s.sendBtn} w-8 h-8 cursor-pointer rounded-md`} onClick={handleSend}></div>
+                  </Tooltip>
+                </div>
               </div>
             </div>
           </div>

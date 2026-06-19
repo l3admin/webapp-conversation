@@ -13,10 +13,10 @@ const translation = {
   },
   author: 'By',
   auth: {
-    unauthorized: 'To Authorize',
-    authorized: 'Authorized',
-    setup: 'Set up authorization to use',
-    setupModalTitle: 'Set Up Authorization',
+    unauthorized: 'To Authorise',
+    authorized: 'Authorised',
+    setup: 'Set up authorisation to use',
+    setupModalTitle: 'Set Up Authorisation',
     setupModalTitleDescription: 'After configuring credentials, all members within the workspace can use this tool when orchestrating applications.',
   },
   includeToolNum: '{{num}} tools included',
@@ -49,8 +49,8 @@ const translation = {
       test: 'Test',
     },
     authMethod: {
-      title: 'Authorization method',
-      type: 'Authorization type',
+      title: 'Authorisation method',
+      type: 'Authorisation type',
       types: {
         none: 'None',
         api_key: 'API Key',
@@ -97,7 +97,7 @@ const translation = {
   },
   builtInPromptTitle: 'Prompt',
   toolRemoved: 'Tool removed',
-  notAuthorized: 'Tool not authorized',
+  notAuthorized: 'Tool not authorised',
 }
 
 export default translation

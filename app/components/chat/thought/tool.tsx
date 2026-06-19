@@ -19,7 +19,7 @@ interface Props {
 }
 
 const getIcon = (toolName: string, allToolIcons: Record<string, string | Emoji>) => {
-  if (toolName.startsWith('dataset-')) { return <DataSetIcon className='shrink-0'></DataSetIcon> }
+  if (isDatasetTool(toolName)) { return <DataSetIcon className='shrink-0'></DataSetIcon> }
   const icon = allToolIcons[toolName]
   if (!icon) { return null }
   return (
@@ -42,15 +42,88 @@ const getIcon = (toolName: string, allToolIcons: Record<string, string | Emoji>)
       ))
 }
 
+const isObject = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+const isDatasetTool = (toolName: string) => {
+  return /^dataset[-_]/i.test(toolName)
+}
+
+const tryParseJson = (value: string): unknown => {
+  try {
+    return JSON.parse(value)
+  }
+  catch {
+    return null
+  }
+}
+
+const findFirstStringByKeys = (value: unknown, keys: string[]): string | null => {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const nested = findFirstStringByKeys(item, keys)
+      if (nested) {
+        return nested
+      }
+    }
+    return null
+  }
+
+  if (!isObject(value)) {
+    return null
+  }
+
+  for (const key of keys) {
+    const candidate = value[key]
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim()
+    }
+  }
+
+  for (const nestedValue of Object.values(value)) {
+    const nested = findFirstStringByKeys(nestedValue, keys)
+    if (nested) {
+      return nested
+    }
+  }
+
+  return null
+}
+
+const resolveDatasetTitle = (name: string, input: string, output: string): string | null => {
+  if (!isDatasetTool(name)) {
+    return null
+  }
+
+  const searchable = [tryParseJson(input), tryParseJson(output)]
+  for (const payload of searchable) {
+    const datasetTitle = findFirstStringByKeys(payload, [
+      'dataset_name',
+      'dataset_title',
+      'knowledge_name',
+      'knowledge_title',
+      'title',
+      'name',
+    ])
+    if (datasetTitle) {
+      return datasetTitle
+    }
+  }
+
+  return null
+}
+
 const Tool: FC<Props> = ({
   payload,
   allToolIcons = {},
 }) => {
   const { t } = useTranslation()
   const { name, input, isFinished, output } = payload
-  const toolName = name.startsWith('dataset-') ? t('dataset.knowledge') : name
+  const datasetTitle = resolveDatasetTitle(name, input, output)
+  const toolName = datasetTitle || name
   const [isShowDetail, setIsShowDetail] = useState(false)
-  const icon = getIcon(toolName, allToolIcons) as any
+  const icon = getIcon(name, allToolIcons) as any
   return (
     <div>
       <div className={cn(!isShowDetail && 'shadow-sm', !isShowDetail && 'inline-block', 'max-w-full overflow-x-auto bg-white rounded-md')}>

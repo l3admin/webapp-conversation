@@ -6,6 +6,17 @@ import { match } from '@formatjs/intl-localematcher'
 import type { Locale } from '.'
 import { i18n } from '.'
 
+const getSafeLocaleCandidates = (candidates: string[]): string[] => {
+  return candidates.flatMap((candidate) => {
+    try {
+      return Intl.getCanonicalLocales(candidate)
+    }
+    catch {
+      return []
+    }
+  })
+}
+
 export const getLocaleOnServer = async (): Promise<Locale> => {
   // @ts-expect-error locales are readonly
   const locales: string[] = i18n.locales
@@ -24,7 +35,9 @@ export const getLocaleOnServer = async (): Promise<Locale> => {
     languages = new Negotiator({ headers: negotiatorHeaders }).languages()
   }
 
+  const safeLanguages = getSafeLocaleCandidates(languages)
+  const fallbackLanguages = safeLanguages.length ? safeLanguages : [i18n.defaultLocale]
   // match locale
-  const matchedLocale = match(languages, locales, i18n.defaultLocale) as Locale
+  const matchedLocale = match(fallbackLanguages, locales, i18n.defaultLocale) as Locale
   return matchedLocale
 }

@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Parzley typography tokens (portable)",
+  "description": "Font families, sizes, weights, and treatments. Pair with external-build-ui-seed.md.",
+  "version": "2026-05-16",
+  "families": {
+    "ui": {
+      "tailwind": "font-sans",
+      "stack": "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      "defaultOnBody": true
+    },
+    "mono": {
+      "tailwind": "font-mono",
+      "useFor": ["artifact_ids", "run_ids", "json_blocks", "code_in_prose", "logo_fallback"]
+    }
+  },
+  "bodyDefault": "font-sans antialiased text-gray-900",
+  "modes": {
+    "operational": {
+      "description": "Signed-in workspace — dense custom pixel scale",
+      "sizeRangePx": [8, 13]
+    },
+    "marketing": {
+      "description": "Landing, auth, pricing — Tailwind named scale",
+      "sizeRange": ["text-xs", "text-4xl"]
+    }
+  },
+  "roles": {
+    "operational": {
+      "eyebrow": {
+        "classes": "text-[10px] font-bold uppercase tracking-widest text-gray-400"
+      },
+      "pageTitle": {
+        "classes": "text-2xl font-black text-gray-900"
+      },
+      "workspaceSectionTitle": {
+        "classes": "text-lg font-bold tracking-tight text-gray-900"
+      },
+      "shellTitle": {
+        "classes": "text-sm font-bold text-gray-800 truncate"
+      },
+      "sectionLabelLight": {
+        "classes": "text-[10px] font-semibold uppercase tracking-wide text-gray-500"
+      },
+      "sectionLabelDense": {
+        "classes": "text-[10px] font-extrabold uppercase tracking-wide"
+      },
+      "sectionLabelDenseAlt": {
+        "classes": "text-[11px] font-extrabold uppercase tracking-wide"
+      },
+      "tooltipSectionTitle": {
+        "classes": "text-[10px] font-black uppercase tracking-wide text-slate-300"
+      },
+      "accordionHeader": {
+        "classes": "text-xs font-semibold uppercase tracking-wider text-slate-500"
+      },
+      "bodyStandard": {
+        "classes": "text-sm font-medium text-gray-600"
+      },
+      "bodyDense": {
+        "classes": "text-[11px] leading-snug text-gray-600"
+      },
+      "bodyRelaxed": {
+        "classes": "text-[11px] leading-relaxed text-gray-700"
+      },
+      "metadata": {
+        "classes": "text-[11px] text-gray-600"
+      },
+      "microLabel": {
+        "classes": "text-[8px] font-bold uppercase leading-snug tracking-wide text-gray-500"
+      },
+      "microLabelAlt": {
+        "classes": "text-[9px] font-semibold leading-tight text-gray-500"
+      },
+      "buttonPrimaryDense": {
+        "classes": "text-xs font-semibold"
+      },
+      "buttonPrimaryCompact": {
+        "classes": "text-[11px] font-bold"
+      },
+      "pillMicro": {
+        "classes": "text-[9px] font-bold uppercase tracking-wider"
+      },
+      "pillStandard": {
+        "classes": "text-[10px] font-bold uppercase tracking-wider"
+      },
+      "pillComfortable": {
+        "classes": "text-[11px] font-bold uppercase tracking-wider"
+      },
+      "inlineId": {
+        "classes": "font-mono text-[11px]"
+      },
+      "documentBlock": {
+        "classes": "font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-slate-700"
+      },
+      "documentBlockReadable": {
+        "classes": "font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-slate-700 selection:bg-indigo-100 selection:text-indigo-900"
+      },
+      "statEmphasis": {
+        "classes": "text-[12px] font-black leading-none"
+      }
+    },
+    "marketing": {
+      "heroTitle": {
+        "classes": "text-3xl font-black text-gray-900 tracking-tight md:text-4xl"
+      },
+      "sectionTitle": {
+        "classes": "text-2xl font-bold text-gray-900 tracking-tight"
+      },
+      "sectionTitleLarge": {
+        "classes": "text-2xl md:text-3xl font-bold text-gray-900 tracking-tight"
+      },
+      "lead": {
+        "classes": "text-sm font-medium text-gray-700 leading-relaxed"
+      },
+      "formLabel": {
+        "classes": "text-sm font-semibold text-gray-700"
+      },
+      "formControl": {
+        "classes": "text-sm font-medium text-gray-900"
+      },
+      "primaryCta": {
+        "classes": "text-sm font-bold text-white"
+      },
+      "finePrint": {
+        "classes": "text-xs font-semibold text-gray-600"
+      }
+    }
+  },
+  "weights": {
+    "black": { "tailwind": "font-black", "use": ["page_titles", "heroes", "dark_tooltip_titles"] },
+    "extrabold": { "tailwind": "font-extrabold", "use": ["dense_section_headings"] },
+    "bold": { "tailwind": "font-bold", "use": ["buttons", "pills", "shell_title"] },
+    "semibold": { "tailwind": "font-semibold", "use": ["labels", "secondary_buttons", "accordion"] },
+    "medium": { "tailwind": "font-medium", "use": ["body", "tooltip_body", "form_fields"] }
+  },
+  "treatments": {
+    "leadingTight": "leading-tight",
+    "leadingSnug": "leading-snug",
+    "leadingRelaxed": "leading-relaxed",
+    "trackingTight": "tracking-tight",
+    "trackingWide": "tracking-wide",
+    "trackingWider": "tracking-wider",
+    "trackingWidest": "tracking-widest",
+    "uppercaseRequiresTracking": true,
+    "tabularNums": "tabular-nums",
+    "truncate": "truncate"
+  },
+  "neutralText": {
+    "primary": "text-gray-900",
+    "secondary": "text-gray-800",
+    "body": "text-gray-700",
+    "muted": "text-gray-600",
+    "subtle": "text-gray-500",
+    "disabled": "text-gray-400",
+    "onDarkBody": "text-slate-100",
+    "onDarkMuted": "text-slate-300"
+  }
+}

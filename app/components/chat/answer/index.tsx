@@ -4,6 +4,7 @@ import type { FeedbackFunc } from '../type'
 import type { ChatItem, MessageRating, VisionFile } from '@/types/app'
 import type { Emoji } from '@/types/tools'
 import { HandThumbDownIcon, HandThumbUpIcon } from '@heroicons/react/24/outline'
+import { Bot } from 'lucide-react'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import Button from '@/app/components/base/button'
@@ -151,12 +152,19 @@ const Answer: FC<IAnswerProps> = ({
     return list.filter(file => file.type === 'image' && file.belongs_to === 'assistant')
   }
 
+  const renderAnswerContent = (value: string, className?: string) => {
+    if (isResponding) {
+      return <div className={`whitespace-pre-wrap break-words ${className || ''}`.trim()}>{value}</div>
+    }
+    return <StreamdownMarkdown content={value} className={className} />
+  }
+
   const agentModeAnswer = (
     <div>
       {agent_thoughts?.map((item, index) => (
         <div key={index}>
           {item.thought && (
-            <StreamdownMarkdown content={item.thought} />
+            renderAnswerContent(item.thought, 'chat-markdown chat-markdown-answer')
           )}
           {/* {item.tool} */}
           {/* perhaps not use tool */}
@@ -179,7 +187,8 @@ const Answer: FC<IAnswerProps> = ({
   return (
     <div key={id}>
       <div className="flex items-start">
-        <div className={`${s.answerIcon} w-10 h-10 shrink-0`}>
+        <div className="relative w-10 h-10 shrink-0 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center">
+          <Bot className='h-5 w-5' strokeWidth={2} />
           {isResponding
             && (
               <div className={s.typeingIcon}>
@@ -202,7 +211,7 @@ const Answer: FC<IAnswerProps> = ({
                 : (isAgentMode
                   ? agentModeAnswer
                   : (
-                    <StreamdownMarkdown content={content} />
+                    renderAnswerContent(content, 'chat-markdown chat-markdown-answer')
                   ))}
               {suggestedQuestions.length > 0 && (
                 <div className="mt-3">

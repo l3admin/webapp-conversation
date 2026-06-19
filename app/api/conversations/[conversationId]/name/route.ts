@@ -13,8 +13,8 @@ export async function POST(request: NextRequest, { params }: {
       name,
     } = body
     const { conversationId } = await params
-    const { user } = await getInfo(request)
-    const agentId = resolveAgentId(request, body?.agent_id || null)
+    const { user, authUserId } = await getInfo(request)
+    const agentId = await resolveAgentId(request, authUserId, body?.agent_id || null)
 
     // auto generate name
     const data = await difyAdapter.renameConversation(agentId, conversationId, name, user, auto_generate)

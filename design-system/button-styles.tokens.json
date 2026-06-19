@@ -1,0 +1,446 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Parzley button style tokens (portable)",
+  "description": "Primary and secondary button definitions for AI-agent or cross-app implementation. Color buckets align with semantic-themes.tokens.json.",
+  "version": "2026-06-05",
+  "references": {
+    "colorBuckets": "./semantic-themes.tokens.json",
+    "typography": "./typography.tokens.json",
+    "humanSpec": "./button-styles.md",
+    "inRepoSource": "../../utils/semanticThemes.ts",
+    "canonicalExample": "../../components/UserContextWidget.tsx"
+  },
+  "interactionRules": {
+    "oneFilledPrimaryPerSurface": "At most one filled-primary control per card, row, or modal action group.",
+    "semanticBucketPerAction": "Pick indigo | emerald | fuchsia | slate | neutral | destructive from what the action represents — not from page chrome.",
+    "hoverIsBackgroundOrWashOnly": "Primary darkens fill; outline and soft-tinted lighten or deepen the same family wash — do not swap families on hover.",
+    "transition": "transition-colors on all interactive buttons; optional active:scale-95 on large marketing CTAs only."
+  },
+  "sizes": {
+    "standard": {
+      "description": "Default operational CTA — headers, cards, library rows",
+      "layout": {
+        "display": "inline-flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "gapPx": 8,
+        "paddingX": "0.75rem",
+        "paddingY": "0.375rem",
+        "borderRadius": "0.5rem",
+        "tailwindRadius": "rounded-lg",
+        "tailwindGap": "gap-2"
+      },
+      "typography": {
+        "tailwind": "text-xs font-semibold",
+        "fontSizePx": 12,
+        "fontWeight": 600
+      },
+      "icon": {
+        "sizePx": 14,
+        "stroke": "currentColor"
+      }
+    },
+    "compact": {
+      "description": "Dense list rows, Assessments resume / Data Viewer pair",
+      "layout": {
+        "display": "inline-flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "gapPx": 4,
+        "paddingX": "0.625rem",
+        "paddingY": "0.25rem",
+        "borderRadius": "0.375rem",
+        "tailwindRadius": "rounded-md",
+        "tailwindGap": "gap-1"
+      },
+      "typography": {
+        "tailwind": "text-[10px] font-bold",
+        "fontSizePx": 10,
+        "fontWeight": 700
+      },
+      "icon": {
+        "sizePx": 14
+      }
+    },
+    "menuRow": {
+      "description": "Full-width stacked actions inside account / profile dropdowns",
+      "layout": {
+        "display": "flex",
+        "width": "100%",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "gapPx": 8,
+        "paddingY": "0.5rem",
+        "paddingX": "0",
+        "borderRadius": "0.375rem",
+        "tailwind": "w-full py-2 flex items-center justify-center gap-2 rounded-md"
+      },
+      "typography": {
+        "tailwind": "text-xs font-bold",
+        "fontSizePx": 12,
+        "fontWeight": 700
+      },
+      "icon": {
+        "sizePx": 14
+      }
+    },
+    "toolbarCompact": {
+      "description": "Assessment Detail revised-document toolbar",
+      "layout": {
+        "display": "inline-flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "paddingX": "0.75rem",
+        "paddingY": "0.375rem",
+        "borderRadius": "0.375rem",
+        "tailwind": "shrink-0 inline-flex items-center justify-center rounded-md border px-3 py-1.5"
+      },
+      "typography": {
+        "tailwind": "text-[10px] font-bold uppercase tracking-widest",
+        "fontSizePx": 10,
+        "fontWeight": 700,
+        "letterSpacing": "0.1em",
+        "textTransform": "uppercase"
+      }
+    }
+  },
+  "variants": {
+    "filledPrimary": {
+      "weight": "highest",
+      "useFor": ["Continue", "Start", "Save", "Generate", "Resume", "Use", "Assign", "Buy", "Confirm"],
+      "default": {
+        "background": "{bucket.filledButton}",
+        "text": "text-white",
+        "border": "border-transparent",
+        "shadow": "shadow-sm"
+      },
+      "hover": {
+        "background": "{bucket.filledButtonHover}"
+      },
+      "disabled": {
+        "background": "bg-slate-100",
+        "text": "text-slate-400",
+        "border": "border-slate-200",
+        "cursor": "cursor-not-allowed"
+      },
+      "recommendedSizes": ["standard", "compact", "toolbarCompact"]
+    },
+    "outlineSecondary": {
+      "weight": "medium",
+      "useFor": ["View", "Preview", "Open details", "Data Viewer", "secondary navigation beside a filled primary"],
+      "default": {
+        "background": "bg-white",
+        "text": "{bucket.outlineButtonText}",
+        "border": "{bucket.outlineButtonBorder}",
+        "shadow": "shadow-sm"
+      },
+      "hover": {
+        "background": "{bucket.outlineButtonBgHover}"
+      },
+      "disabled": {
+        "background": "bg-slate-100",
+        "text": "text-slate-400",
+        "border": "border-slate-200",
+        "cursor": "cursor-not-allowed"
+      },
+      "recommendedSizes": ["standard", "compact", "toolbarCompact"]
+    },
+    "softTintedSecondary": {
+      "weight": "medium-low",
+      "useFor": ["Stacked menu navigation inside dropdowns", "full-width account menu links with icon + label"],
+      "note": "Passive tinted fill — not white. Lighter border (-100) than outline secondary (-200). Canonical: UserContextWidget account dropdown.",
+      "default": {
+        "background": "{bucket.background}",
+        "text": "{bucket.accentText}",
+        "border": "{bucket.softTintBorder}"
+      },
+      "hover": {
+        "background": "{bucket.backgroundHover}"
+      },
+      "recommendedSizes": ["menuRow"]
+    },
+    "neutralSoftSecondary": {
+      "weight": "medium-low",
+      "useFor": ["Account & profile", "generic settings links in menus without semantic bucket"],
+      "default": {
+        "background": "bg-gray-100",
+        "text": "text-gray-700",
+        "border": "none"
+      },
+      "hover": {
+        "background": "hover:bg-gray-200"
+      },
+      "recommendedSizes": ["menuRow", "standard"]
+    },
+    "commerceFilledPrimary": {
+      "weight": "highest",
+      "useFor": ["Checkout", "Top up", "Purchase", "billing confirm"],
+      "bucket": "commerceNeutral",
+      "default": {
+        "background": "bg-slate-800",
+        "text": "text-white",
+        "border": "border-transparent"
+      },
+      "hover": {
+        "background": "hover:bg-slate-900"
+      },
+      "recommendedSizes": ["standard"]
+    },
+    "ghost": {
+      "weight": "low",
+      "useFor": ["Tertiary toolbar actions", "low-emphasis controls in dense toolbars"],
+      "default": {
+        "background": "transparent",
+        "text": "{bucket.outlineButtonText}",
+        "border": "border-transparent"
+      },
+      "hover": {
+        "background": "{bucket.outlineButtonBgHover}"
+      },
+      "recommendedSizes": ["toolbarCompact"]
+    },
+    "destructiveSoft": {
+      "weight": "medium",
+      "useFor": ["Clear local session", "destructive menu rows", "reversible delete/clear in menus"],
+      "default": {
+        "background": "bg-red-50",
+        "text": "text-red-600",
+        "border": "border-red-100"
+      },
+      "hover": {
+        "background": "hover:bg-red-100",
+        "text": "hover:text-red-700"
+      },
+      "recommendedSizes": ["menuRow", "standard"]
+    },
+    "destructiveIconOnly": {
+      "weight": "medium",
+      "useFor": ["Compact logout control beside user summary in dropdown header area"],
+      "default": {
+        "background": "bg-red-50",
+        "text": "text-red-600",
+        "border": "border-red-100",
+        "padding": "px-3"
+      },
+      "hover": {
+        "background": "hover:bg-red-100",
+        "text": "hover:text-red-700"
+      },
+      "layout": {
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "borderRadius": "0.5rem",
+        "tailwind": "px-3 rounded-lg flex items-center justify-center"
+      },
+      "icon": {
+        "sizePx": 16
+      }
+    }
+  },
+  "bucketResolvedStyles": {
+    "primaryWorkflow": {
+      "tailwindFamily": "indigo",
+      "filledButton": "bg-indigo-600",
+      "filledButtonHover": "hover:bg-indigo-700",
+      "outlineButtonBorder": "border-indigo-200",
+      "outlineButtonText": "text-indigo-700",
+      "outlineButtonBgHover": "hover:bg-indigo-50",
+      "background": "bg-indigo-50",
+      "backgroundHover": "hover:bg-indigo-100",
+      "accentText": "text-indigo-700",
+      "softTintBorder": "border-indigo-100",
+      "hex": {
+        "fillDefault": "#4F46E5",
+        "fillHover": "#4338CA",
+        "softBg": "#EEF2FF",
+        "softBgHover": "#E0E7FF",
+        "softText": "#4338CA",
+        "softBorder": "#E0E7FF",
+        "outlineBorder": "#C7D2FE",
+        "outlineText": "#4338CA",
+        "outlineHoverBg": "#EEF2FF"
+      }
+    },
+    "userAuthored": {
+      "tailwindFamily": "emerald",
+      "filledButton": "bg-emerald-600",
+      "filledButtonHover": "hover:bg-emerald-700",
+      "outlineButtonBorder": "border-emerald-200",
+      "outlineButtonText": "text-emerald-700",
+      "outlineButtonBgHover": "hover:bg-emerald-50",
+      "background": "bg-emerald-50",
+      "backgroundHover": "hover:bg-emerald-100",
+      "accentText": "text-emerald-700",
+      "softTintBorder": "border-emerald-100",
+      "hex": {
+        "fillDefault": "#059669",
+        "fillHover": "#047857",
+        "softBg": "#ECFDF5",
+        "softBgHover": "#D1FAE5",
+        "softText": "#047857",
+        "softBorder": "#D1FAE5",
+        "outlineBorder": "#A7F3D0",
+        "outlineText": "#047857",
+        "outlineHoverBg": "#ECFDF5"
+      }
+    },
+    "curatedLibrary": {
+      "tailwindFamily": "fuchsia",
+      "filledButton": "bg-fuchsia-600",
+      "filledButtonHover": "hover:bg-fuchsia-700",
+      "outlineButtonBorder": "border-fuchsia-200",
+      "outlineButtonText": "text-fuchsia-700",
+      "outlineButtonBgHover": "hover:bg-fuchsia-50",
+      "background": "bg-fuchsia-50",
+      "backgroundHover": "hover:bg-fuchsia-100",
+      "accentText": "text-fuchsia-700",
+      "softTintBorder": "border-fuchsia-100",
+      "hex": {
+        "fillDefault": "#C026D3",
+        "fillHover": "#A21CAF",
+        "softBg": "#FDF4FF",
+        "softBgHover": "#FAE8FF",
+        "softText": "#A21CAF",
+        "softBorder": "#FAE8FF",
+        "outlineBorder": "#F5D0FE",
+        "outlineText": "#A21CAF",
+        "outlineHoverBg": "#FDF4FF"
+      }
+    },
+    "commerceNeutral": {
+      "tailwindFamily": "slate",
+      "filledButton": "bg-slate-800",
+      "filledButtonHover": "hover:bg-slate-900",
+      "outlineButtonBorder": "border-slate-200",
+      "outlineButtonText": "text-slate-700",
+      "outlineButtonBgHover": "hover:bg-slate-50",
+      "hex": {
+        "fillDefault": "#1E293B",
+        "fillHover": "#0F172A",
+        "outlineBorder": "#E2E8F0",
+        "outlineText": "#334155",
+        "outlineHoverBg": "#F8FAFC"
+      }
+    },
+    "neutral": {
+      "tailwindFamily": "gray",
+      "background": "bg-gray-100",
+      "backgroundHover": "hover:bg-gray-200",
+      "accentText": "text-gray-700",
+      "hex": {
+        "softBg": "#F3F4F6",
+        "softBgHover": "#E5E7EB",
+        "softText": "#374151"
+      }
+    },
+    "destructive": {
+      "tailwindFamily": "red",
+      "background": "bg-red-50",
+      "backgroundHover": "hover:bg-red-100",
+      "accentText": "text-red-600",
+      "accentTextHover": "hover:text-red-700",
+      "softTintBorder": "border-red-100",
+      "hex": {
+        "softBg": "#FEF2F2",
+        "softBgHover": "#FEE2E2",
+        "softText": "#DC2626",
+        "softTextHover": "#B91C1C",
+        "softBorder": "#FEE2E2"
+      }
+    }
+  },
+  "composedExamples": {
+    "accountMenuAssessmentHistory": {
+      "variant": "softTintedSecondary",
+      "bucket": "primaryWorkflow",
+      "size": "menuRow",
+      "label": "Assessment History",
+      "iconSizePx": 14,
+      "tailwind": "w-full py-2 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors flex items-center justify-center gap-2 border border-indigo-100"
+    },
+    "accountMenuStandardsLibrary": {
+      "variant": "softTintedSecondary",
+      "bucket": "curatedLibrary",
+      "size": "menuRow",
+      "label": "Standards Library",
+      "tailwind": "w-full py-2 text-xs font-bold text-fuchsia-700 bg-fuchsia-50 hover:bg-fuchsia-100 rounded-md transition-colors flex items-center justify-center gap-2 border border-fuchsia-100"
+    },
+    "accountMenuBuyCredits": {
+      "variant": "softTintedSecondary",
+      "bucket": "userAuthored",
+      "size": "menuRow",
+      "label": "Buy More Credits",
+      "tailwind": "w-full py-2 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-md transition-colors flex items-center justify-center gap-2 border border-emerald-100"
+    },
+    "accountMenuProfile": {
+      "variant": "neutralSoftSecondary",
+      "size": "menuRow",
+      "label": "Account & profile",
+      "tailwind": "w-full py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors flex items-center justify-center gap-2"
+    },
+    "accountMenuClearSession": {
+      "variant": "destructiveSoft",
+      "size": "menuRow",
+      "label": "Clear Local Session",
+      "tailwind": "w-full py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors flex items-center justify-center gap-2 border border-red-100"
+    },
+    "assessmentsResume": {
+      "variant": "filledPrimary",
+      "bucket": "primaryWorkflow",
+      "size": "compact",
+      "label": "Resume",
+      "tailwind": "rounded-md border border-indigo-700 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm bg-indigo-600 hover:bg-indigo-700"
+    },
+    "assessmentsDataViewer": {
+      "variant": "outlineSecondary",
+      "bucket": "primaryWorkflow",
+      "size": "compact",
+      "label": "Data Viewer",
+      "tailwind": "rounded-md border bg-white px-2 py-1 text-[10px] font-bold shadow-sm border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+    },
+    "revisedDocToolbarGenerate": {
+      "variant": "filledPrimary",
+      "bucket": "primaryWorkflow",
+      "size": "toolbarCompact",
+      "tailwind": "shrink-0 inline-flex items-center justify-center text-[10px] font-bold uppercase tracking-widest rounded-md border transition-colors px-3 py-1.5 border-transparent text-white shadow-sm bg-indigo-600 hover:bg-indigo-700"
+    },
+    "revisedDocToolbarOutline": {
+      "variant": "outlineSecondary",
+      "bucket": "primaryWorkflow",
+      "size": "toolbarCompact",
+      "tailwind": "shrink-0 inline-flex items-center justify-center text-[10px] font-bold uppercase tracking-widest rounded-md border transition-colors px-3 py-1.5 bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+    }
+  },
+  "cssCustomPropertiesTemplate": {
+    "description": "Optional plain-CSS mapping — set per bucket on a container, then apply variant class.",
+    "perBucket": {
+      "--pz-btn-fill": "{hex.fillDefault}",
+      "--pz-btn-fill-hover": "{hex.fillHover}",
+      "--pz-btn-soft-bg": "{hex.softBg}",
+      "--pz-btn-soft-bg-hover": "{hex.softBgHover}",
+      "--pz-btn-soft-text": "{hex.softText}",
+      "--pz-btn-soft-border": "{hex.softBorder}",
+      "--pz-btn-outline-border": "{hex.outlineBorder}",
+      "--pz-btn-outline-text": "{hex.outlineText}",
+      "--pz-btn-outline-hover-bg": "{hex.outlineHoverBg}"
+    },
+    "variantClasses": {
+      "filledPrimary": "background: var(--pz-btn-fill); color: #fff; border: 1px solid transparent;",
+      "filledPrimaryHover": "background: var(--pz-btn-fill-hover);",
+      "outlineSecondary": "background: #fff; color: var(--pz-btn-outline-text); border: 1px solid var(--pz-btn-outline-border);",
+      "outlineSecondaryHover": "background: var(--pz-btn-outline-hover-bg);",
+      "softTintedSecondary": "background: var(--pz-btn-soft-bg); color: var(--pz-btn-soft-text); border: 1px solid var(--pz-btn-soft-border);",
+      "softTintedSecondaryHover": "background: var(--pz-btn-soft-bg-hover);"
+    }
+  },
+  "featureToBucket": {
+    "activeAnalysisOrAssessment": "primaryWorkflow",
+    "documentAnalyzerContinue": "primaryWorkflow",
+    "customTemplateCreateOrEdit": "userAuthored",
+    "catalogStandardsLibrary": "curatedLibrary",
+    "billingTopUpCheckout": "commerceNeutral",
+    "accountSettingsGeneric": "neutral",
+    "logoutOrClearDestructive": "destructive"
+  }
+}

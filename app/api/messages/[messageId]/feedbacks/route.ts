@@ -12,8 +12,8 @@ export async function POST(request: NextRequest, { params }: {
       rating,
     } = body
     const { messageId } = await params
-    const { user } = await getInfo(request)
-    const agentId = resolveAgentId(request, body?.agent_id || null)
+    const { user, authUserId } = await getInfo(request)
+    const agentId = await resolveAgentId(request, authUserId, body?.agent_id || null)
     const data = await difyAdapter.messageFeedback(agentId, messageId, rating, user)
     return NextResponse.json(data)
   }

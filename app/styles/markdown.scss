@@ -1039,3 +1039,78 @@
 .markdown-body ::-webkit-calendar-picker-indicator {
   filter: invert(50%);
 }
+
+/* Chat-specific markdown tuning */
+.chat-markdown {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.chat-markdown p:last-child,
+.chat-markdown ul:last-child,
+.chat-markdown ol:last-child,
+.chat-markdown pre:last-child,
+.chat-markdown table:last-child,
+.chat-markdown blockquote:last-child {
+  margin-bottom: 0;
+}
+
+.chat-markdown pre {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.chat-markdown table {
+  border-radius: 4px;
+}
+
+.chat-markdown-answer table {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.chat-markdown-answer table th {
+  background-color: #e0e7ff;
+  color: #1f2937;
+  border-color: #c7d2fe;
+}
+
+.chat-markdown-answer table th,
+.chat-markdown-answer table td {
+  border-color: #d1d5db;
+}
+
+.chat-markdown-answer table td {
+  background-color: #ffffff;
+}
+
+.chat-markdown-answer table tr:nth-child(2n) td {
+  background-color: #f8fafc;
+}
+
+.chat-markdown-answer code,
+.chat-markdown-answer tt {
+  background-color: #e5e7eb;
+}
+
+.chat-markdown-question,
+.chat-markdown-question .markdown-body {
+  color: #ffffff;
+}
+
+.chat-markdown-question a {
+  color: #dbeafe;
+}
+
+.chat-markdown-question code,
+.chat-markdown-question tt {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.chat-markdown-question pre {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.35);
+}

@@ -22,19 +22,25 @@ const Button: FC<IButtonProps> = ({
   let style = 'cursor-pointer'
   switch (type) {
     case 'link':
-      style = disabled ? 'border-solid border border-gray-200 bg-gray-200 cursor-not-allowed text-gray-800' : 'border-solid border border-gray-200 cursor-pointer text-blue-600 bg-white hover:shadow-sm hover:border-gray-300'
+      style = disabled
+        ? 'border border-slate-200 bg-slate-100 cursor-not-allowed text-slate-400'
+        : 'border border-indigo-200 cursor-pointer text-indigo-700 bg-white hover:bg-indigo-50 hover:border-indigo-300'
       break
     case 'primary':
-      style = (disabled || loading) ? 'bg-primary-600/75 cursor-not-allowed text-white' : 'bg-primary-600 hover:bg-primary-600/75 hover:shadow-md cursor-pointer text-white hover:shadow-sm'
+      style = (disabled || loading)
+        ? 'border border-slate-200 bg-slate-100 cursor-not-allowed text-slate-400'
+        : 'border border-transparent bg-indigo-600 hover:bg-indigo-700 cursor-pointer text-white'
       break
     default:
-      style = disabled ? 'border-solid border border-gray-200 bg-gray-200 cursor-not-allowed text-gray-800' : 'border-solid border border-gray-200 cursor-pointer text-gray-500 hover:bg-white hover:shadow-sm hover:border-gray-300'
+      style = disabled
+        ? 'border border-slate-200 bg-slate-100 cursor-not-allowed text-slate-400'
+        : 'border border-gray-200 cursor-pointer text-gray-600 bg-white hover:bg-gray-50 hover:border-gray-300'
       break
   }
 
   return (
     <div
-      className={`flex justify-center items-center content-center h-9 leading-5 rounded-lg px-4 py-2 text-base ${style} ${className && className}`}
+      className={`flex justify-center items-center content-center h-9 leading-5 rounded-lg px-4 py-2 text-xs font-semibold transition-colors ${style} ${className && className}`}
       onClick={disabled ? undefined : onClick}
     >
       {children}
